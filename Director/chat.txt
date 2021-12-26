@@ -1,0 +1,15 @@
+Type Couple : ('a, 'b)
+
+Interface :
+| write_on_wind : author:str text:str debut:int fin:int -> unit : écrit un texte sur la fenêtre, fin et début sont inclus
+| cutext : text:str -> Couple int int : renvoie l'indice de début et de fin du texte à écrire sur une même ligne de la fenêtre
+| get_msg : unit -> str : récupère les éventuels messages envoyés par le serveur
+| sendmsg : unit -> unit : envoie le message entré au serveur, et l'affiche au niveau du client
+| writemsg : msg:char array -> unit : met à jour le tableau qui correspond à la chaine de caractère qui représente le message du joueur en fonction de la touche qui a été enfoncée
+| print_msg : msg:char array -> unit : met à jour l'affichage du message qu'est en train d'écrire le joueur
+
+Fonctionnement :
+Les messages envoyés par les autres joueurs sont reçus et lus par la fonction get_msg, puis le texte est décodé par la fonction cutext, avant d'être affiché sur la fenêtre par la fonction write_on_wind.
+La fonction writemsg permet au client courant d'écrire des messages, en mettant à jour un tableau de caractère (à taille maximale fixée)
+Cette mise à jour est indiquée au joueur par l'action de la fonction print_msg.
+Si ce dernier appuie sur la touche correspondant à l'envoi d'un message, la fonction sendmsg est appelée, qui envoie le message aux autres clients
