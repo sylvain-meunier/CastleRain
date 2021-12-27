@@ -1,0 +1,12 @@
+Interface
+| launcher_wind : unit -> unit : crée la fenêtre du launcher
+| launcher_command : int -> int : exécute une commande du launcher et renvoie un code de sortie
+| chat_command : unit -> unit : fonction de commande en charge de la fenêtre de chat
+| dialogue_command : unit -> unit : fonction de commande en charge de la fenêtre des dialogues
+| interaction_command : unit -> unit : fonction de commande en charge de la fenêtre d"interactions
+| game_command : fun array -> int array : crée les 4 fenêtres de jeu dans des processus séparés et renvoie un tableau contenant les identifiants de ces processus. Ceux-ci contiennent également une fonction de commande que chaque processus exécute. Cette fonction prend les fonctions de commandes des processus en argument
+
+Fonctionnement :
+Lance le launcher et exécute le code associé afin que le client puisse créer ou rejoindre une partie
+Ensuite, crée 4 les 4 fenêtres de jeu dans différents processus, communiquant entre eux par des fichiers
+Puis gère le jeu, notamment la fermeture des fenêtres en fin d'exécution, en tuant les processus enfants, puis relance le launcher.
