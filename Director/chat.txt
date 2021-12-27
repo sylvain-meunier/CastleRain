@@ -9,7 +9,14 @@ Interface :
 | print_msg : msg:char array -> unit : met à jour l'affichage du message qu'est en train d'écrire le joueur
 
 Fonctionnement :
-Les messages envoyés par les autres joueurs sont reçus et lus par la fonction get_msg, puis le texte est décodé par la fonction cutext, avant d'être affiché sur la fenêtre par la fonction write_on_wind.
-La fonction writemsg permet au client courant d'écrire des messages, en mettant à jour un tableau de caractère (à taille maximale fixée)
-Cette mise à jour est indiquée au joueur par l'action de la fonction print_msg.
-Si ce dernier appuie sur la touche correspondant à l'envoi d'un message, la fonction sendmsg est appelée, qui envoie le message aux autres clients
+Le programme se compose de 2 threads
+-   Dès qu'un message est reçu, il est lu par la fonction get_msg, puis le texte est décodé par la fonction cutext, et ajouté dans une liste partagée par les deux threads.
+-   Dès que la liste contenant des messages n'est pas vide, la fonction write_on_wind est appelée et affiche les nouveaux messages à l'écran.
+-   La fonction writemsg permet au client courant d'écrire des messages, en mettant à jour un tableau de caractère (à taille maximale fixée)
+    Cette mise à jour est indiquée au joueur par l'action de la fonction print_msg.
+    Si ce dernier appuie sur la touche correspondant à l'envoi d'un message, la fonction sendmsg est appelée, qui envoie le message à tous les clients.
+    Le message est alors reçu et traité par la première thread.
+
+Améliorations possibles :
+- retenir les messages reçus dans un fichier
+- faire un système de page afin de pouvoir afficher tous les messages (il faudrait alors une structure de données appropriée) et un moyen de passer d'une page à l'autre
