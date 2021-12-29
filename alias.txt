@@ -1,8 +1,10 @@
 # Ce fichier contient la liste des extensions utilisées par l'application, ainsi que leur signification
 
-.img : contient une image codée sous une forme compréhensible par Graphics
 .ml : contient du code
 .txt : contient un "directeur" : explique une partie du code d'un projet
+.xmm : contient les paramètres initiaux de xmodmap
+
+.img : contient une image codée sous une forme compréhensible par Graphics
 .save : contient les données de jeu
 .par : contient les paramètres du jeu
 .chat : contient les messages d'un chat
