@@ -3,6 +3,7 @@
 .ml : contient du code
 .txt : contient un "directeur" : explique une partie du code d'un projet
 .xmm : contient les paramètres initiaux de xmodmap
+.id : contient l'identifiant d'une fenêtre
 
 .img : contient une image codée sous une forme compréhensible par Graphics
 .save : contient les données de jeu

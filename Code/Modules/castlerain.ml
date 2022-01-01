@@ -13,7 +13,16 @@ struct
 	let init () = allow_arrow_press ()
 end ;;
 
+module Fleche =
+struct
+	let left = Char.chr 240 and right = Char.chr 241 and up = Char.chr 242 and down = Char.chr 243
+end ;;
+
 module Close =
 struct
-	let close () = Unix.system "xmodmap ./touchmem.xmm"
+	let close () =
+		begin
+			ignore (Unix.system "xmodmap ./touchmem.xmm");
+			exit 0;
+		end
 end ;;
