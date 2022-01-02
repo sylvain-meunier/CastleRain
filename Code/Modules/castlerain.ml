@@ -1,4 +1,5 @@
-#load "unix.cma";;
+#load "unix.cma" ;;
+#require "graphics" ;;
 
 module Init =
 struct
@@ -10,12 +11,19 @@ struct
 		ignore (Unix.system "xmodmap -e \"keysym  Up = 0xf2\"");
 		ignore (Unix.system "xmodmap -e \"keysym  Down = 0xf3\"");
 		end
-	let init () = allow_arrow_press ()
+	
+	let empty_file () = ignore (Unix.system ">chat.tsin >game.tsin >dial.tsin >chat.tsout >game.tsout >dial.tsout")
+	let init () =
+		begin
+			allow_arrow_press () ;
+			empty_file () ;
+		end
 end ;;
 
 module Fleche =
 struct
 	let left = Char.chr 240 and right = Char.chr 241 and up = Char.chr 242 and down = Char.chr 243
+	let left_maj = Char.uppercase_ascii left and rigth_maj = Char.uppercase_ascii right and down_maj = Char.uppercase_ascii down and up_maj = Char.uppercase_ascii up
 end ;;
 
 module Close =

@@ -19,9 +19,10 @@ struct
 					p.mem.(i-1) <- p.mem.(i)
 				done;
 				p.taille <- p.taille - 1;
-			end ;
+			end
 	and set p ind ele = p.mem.(ind) <- ele
 	and get p ind = p.mem.(ind)
+	and taille p = p.taille
 	and new_pyliste ele = {mem = (Array.make 1 ele); taille = 0; ele = ele}
 	let insert p ind ele =
 		if ind >= 0 then
@@ -33,4 +34,21 @@ struct
 				done;
 				set p ind ele;
 			end ;
+	and add_lock p ele taille =
+		if p.taille <= taille then add p ele
+		else ()
+	and empty p =
+		while p.taille > 0 do
+			remove p 0 ;
+		done
+	let insert_lock p ind ele taille_max =
+		if ind >= 0 then
+			begin
+				if p.taille > 0 then add_lock p (p.mem.(p.taille-1)) taille_max
+				else add_lock p ele taille_max;
+				for i = min (p.taille-1) taille_max downto ind+1 do
+					p.mem.(i) <- p.mem.(i-1)
+				done;
+				set p ind ele;
+			end
 end ;;

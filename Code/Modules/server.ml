@@ -1,7 +1,6 @@
 #use "topfind" ;;
 
 #load "unix.cma" ;;
-#use "./pyliste.ml" ;;
 
 module Server =
 struct
@@ -17,19 +16,36 @@ struct
          while true do
             let (s, caller) = Unix.accept sock 
             in match Unix.fork() with
-                  0 -> if Unix.fork() <> 0 then exit 0 ; 
+                  | 0 -> (if Unix.fork() <> 0 then exit 0 ;
                         let inchan = Unix.in_channel_of_descr s 
                         and outchan = Unix.out_channel_of_descr s
                         in server_fun inchan outchan ;
                            close_in inchan ;
                            close_out outchan ;
-                           exit 0
-                  id -> Unix.close s; ignore(Unix.waitpid [] id)
+                           exit 0)
+                  | id -> (Unix.close s; ignore(Unix.waitpid [] id))
          done
       
    let main_server serv_fun sport =
       let mon_adresse = get_my_addr()
       in establish_server serv_fun  (Unix.ADDR_INET(mon_adresse, sport))
+
+   let get_text_msg ic = let msg = ref "" in
+      try
+         while true do
+            msg := !msg ^ (input_line ic) ;
+         done; !msg
+      with End_of_file -> !msg
+   
+   let rec pseudo_valide p plist = match plist with
+   | [] -> true
+   | a::b -> not (String.equal p a) && pseudo_valide p b
+
+   let rec shutdownclients inc out = match inc, out with
+   | [], [] -> exit 0
+   | a::l1, b::l2 -> (Unix.shutdown (Unix.descr_of_in_channel a) Unix.SHUTDOWN_ALL; Unix.shutdown (Unix.descr_of_out_channel b) Unix.SHUTDOWN_ALL; shutdownclients l1 l2)
+   | a::b, [] -> (Unix.shutdown (Unix.descr_of_in_channel a) Unix.SHUTDOWN_ALL; shutdownclients b [])
+   | [], a::b -> (Unix.shutdown (Unix.descr_of_out_channel a) Unix.SHUTDOWN_ALL; shutdownclients [] b)
 
    let answer oc text =
       begin
@@ -37,66 +53,97 @@ struct
          flush oc ;
       end
 
-   let game_server c nb =
-      let mon_adresse = get_my_addr() in
-      let sockaddr = (Unix.ADDR_INET(mon_adresse, c)) in
-      let domain = Unix.domain_of_sockaddr sockaddr in
-      let sock = Unix.socket domain Unix.SOCK_STREAM 0 in
-         Unix.bind sock sockaddr ;
-         Unix.listen sock 10;
-         let (s, caller) = Unix.accept sock in
-         let inchan = Unix.in_channel_of_descr s
-         and outchan = Unix.out_channel_of_descr s in
-         let pseudo = input_line inchan in
-         let clients = Pyliste.new_pyliste [|inchan; outchan; pseudo|] in
-         begin
-            while clients.taille < nb do
-               let (s, caller) = Unix.accept sock in
-               let inchan = Unix.in_channel_of_descr s
-               and outchan = Unix.out_channel_of_descr s in
-               let pseudo = input_line inchan in
-               begin
-                  Pyliste.add clients [|inchan; outchan; pseudo|] ;
-                  let i = ref 0 and msg = "NB " ^ string_of_int clients.taille in
-                  while !i < clients.taille do
-                     try answer (Pyliste.get client !i).(1) msg
-                     with _ -> (Pyliste.remove clients !i; i := !i - 1)
-                     i := !i + 1 ;
-                  done;
-                  if clients.taille = 0 then exit 0 ;
-               end ;
-            done ;
-            init_game clients ;
-         end
+   let rec answer_all outc text = match outc with
+   | [] -> ()
+   | a::b -> (try answer a text with _ -> (); answer_all b text)
 
-      let init_game clients =
-         begin
-            let msg = "START 0" in
-            for i=0 to clients.taille - 1 do
-               try answer (Pyliste.get client i).(1) msg
-               with _ -> (Pyliste.remove clients i)
+   let get_player_info pseudo_info room ic = pseudo_info ^ "ROOM " ^ room ^ (get_text_msg ic)
+
+   let rec envoi_info_joueur info room outc rooms = match outc, rooms with
+   | [], _ | _, [] -> ()
+   | a::l1, b::l2 -> (if b = room then answer a info; envoi_info_joueur info room l1 l2)
+   
+   let rec count_player current_nb inc outc pseud rooms msg mem1 mem2 mem3 mem4 = match (inc, outc, pseud, rooms) with
+   | [], _, _, _ | _, [], _, _ | _, _, [], _ | _, _, _, [] -> mem1, mem2, mem3, mem4
+   | a::l1, b::l2, c::l3, d::l4 ->
+      try (answer b msg; count_player current_nb l1 l2 l3 l4 msg (a::mem1) (b::mem2) (c::mem3) (d::mem4))
+      with _ -> (current_nb := !current_nb - 1 ; count_player current_nb l1 l2 l3 l4 msg mem1 mem2 mem3 mem4)
+   
+   let manage_msg ic outc rooms = let command = input_line ic in
+      begin
+         if String.starts_with ~prefix:"PLAYER" command then let pseudo_info = input_line ic in let room = Scanf.sscanf (input_line ic) "ROOM %s" (fun x -> x) in envoi_info_joueur (get_player_info pseudo_info room ic) room outc rooms ;(* Envoi d'informations relatives à la position des joueurs en jeu *)
+         if String.starts_with ~prefix:"CHAT" command then answer_all outc (get_text_msg ic) ; (* Envoi d'un message dans le chat *)
+         if String.starts_with ~prefix:"DEND" command then answer_all outc "DEND" ; (* Annonce que le dialogue a été lu *)
+      end
+   
+   let rec manage_clients msgs outc rooms = match msgs with
+   | [] -> ()
+   | a::l1 -> (let ic = Unix.in_channel_of_descr a in manage_msg ic outc rooms; manage_clients l1 outc rooms)
+   
+   let get_pseudo ic = if String.starts_with ~prefix:"PSEUDO" (input_line ic) then input_line ic else "Alfred"
+   let get_room ic = if String.starts_with ~prefix:"ROOM" (input_line ic) then input_line ic else ""
+
+   let init_game clients current_nb =
+      let inc, outc, pseud, rooms = !clients in
+      begin
+         answer_all outc "START 0" ;
+         try
+            while true do
+               let couplemsgs = Unix.select (List.map (Unix.descr_of_in_channel) inc) [] [] 1. in
+               let msgs, _, _ = couplemsgs in
+               manage_clients (msgs) outc rooms ;
             done
-            (* Envoyer les textures, les informations de placement... *)
-            (* input_line est bloquante -> comment gérer les clients ? Une thread par client ? *)
-            (* https://caml.inria.fr/pub/docs/oreilly-book/html/book-ora166.html -> Unix.select*)
-         end
+         with _ -> shutdownclients inc outc ;
+      end
+
+   let game_server c nb sock =
+      Unix.listen sock 10;
+      let (s, caller) = Unix.accept sock in
+      let inchan = Unix.in_channel_of_descr s
+      and outchan = Unix.out_channel_of_descr s in
+      let pseudo = get_pseudo inchan in
+      let room = get_room inchan in
+      let clients = ref ([inchan], [outchan], [pseudo], [room]) and current_nb = ref 1 in
+      begin
+         while !current_nb < nb do
+            let (s, caller) = Unix.accept sock in
+            let inchan = Unix.in_channel_of_descr s
+            and outchan = Unix.out_channel_of_descr s in
+            let pseudo = ref (get_pseudo inchan) in
+            let room = get_room inchan and inc, outc, pseud, rooms = !clients in
+            begin
+               while not (pseudo_valide !pseudo pseud) do
+                  pseudo := !pseudo ^ "_" ;
+               done ;
+               current_nb := !current_nb + 1 ;
+               let msg = "NB " ^ string_of_int !current_nb in
+               clients := count_player current_nb (inchan::inc) (outchan::outc) ((!pseudo)::pseud) (room::rooms) msg [] [] [] [] ;
+               if !current_nb = 0 then exit 0 ;
+            end ;
+         done ;
+         init_game clients current_nb;
+      end
 
    let find_port oc nb =
       let c = ref 0 in
       begin
-         while !c < 400 &&  c >= 0 do
+         let mon_adresse = get_my_addr () and cond = ref true in
+         while !c < 400 && !cond do
             try
-               !c = -1
+               let sockaddr = (Unix.ADDR_INET(mon_adresse, !c)) in
+               let domain = Unix.domain_of_sockaddr sockaddr in
+               let sock = Unix.socket domain Unix.SOCK_STREAM 0 in
+               begin
+                  Unix.bind sock sockaddr ;
+                  cond := false ;
+                  answer oc ("LAUNCHED " ^ (string_of_int (port + !c))) ;
+                  match Unix.fork () with
+                  | 0 -> game_server !c nb sock
+                  | pid -> exit 0
+               end
             with _ -> c := !c + 1;
          done ;
-         if !c = -1 then
-            begin
-               answer oc "LAUNCHED " ^ (string_of_int (port + !c)) ;
-               match Unix.fork () with
-               | 0 -> game_server !c nb
-               | pid -> exit 0 ;
-            end
-         else answer oc "ECHEC 0" ;
+         answer oc "FAILURE 0" ;
       end
 
    let answer_back ic oc =
@@ -105,13 +152,13 @@ struct
             let s = input_line ic in
             let command, nb = Scanf.sscanf s "%s %d" (fun x y -> x, y) in
                begin
-                  if String.equal command "LAUNCH" then  (find_port oc nb; exit 0;)
+                  if String.equal command "LAUNCH" then (find_port oc nb; exit 0;)
                end
          done
-      with _ -> (Printf.printf "Fin du traitement\n" ; exit 0)
-      
+      with _ -> (Printf.printf "Fin\n %!"; exit 0)
+
    let launch () = Unix.handle_unix_error main_server answer_back port
 
 end ;;
 
-Server.launch () ;;
+(* Server.launch () ;; *)

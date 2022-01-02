@@ -4,9 +4,10 @@
 .txt : contient un "directeur" : explique une partie du code d'un projet
 .xmm : contient les paramètres initiaux de xmodmap
 .id : contient l'identifiant d'une fenêtre
-
+.ts : fichier de transfert d'information entre les différentes parties du programme. Peut servir à débugger. Vidé de toute information à chaque fois que le jeu est lancé.
 .img : contient une image codée sous une forme compréhensible par Graphics
-.save : contient les données de jeu
-.par : contient les paramètres du jeu
+
 .chat : contient les messages d'un chat
 .map : contient les informations relatives à une maison
+.save : contient les données de jeu
+.par : contient les paramètres du jeu
