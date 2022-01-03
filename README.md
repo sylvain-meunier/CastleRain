@@ -1,7 +1,12 @@
 ## CastleRain
-L'incroyable histoire d'AlfredAl, architecte honoraire
+L'incroyable histoire d'Alfred, architecte honoraire.
 
-## Lancement
+# Histoire
+Notre histoire se passe dans le département d'Euler, plus précisément au château de Mousselarge.
+Vous avez été contacté par Rémi Tallumij afin de lui bâtir un château, qui doive bien sûr résister aux intemperies... ou à pire.
+Votre but sera donc de satisfaire votre client, en parvenant à passer les différentes inspections de votre maison, et dans la limite du budget imparti.
+
+## Initialisation
 Sous WSL2, les commandes suivantes sont nécessaires :
 * export DISPLAY='nameserver':0.0
 * export LIBGL_ALWAYS_INDIRECT=1
@@ -17,7 +22,7 @@ Remarque : Ce projet est loin d'être achevé, cependant les idées générales 
 
 Remarque : Les fichiers de code contiennent peu (ou pas) de commentaire car cela risquait de rendre le code moins lisible (d'un point de vue subjectif)
 
-[]Voir la partie Lancement et Test](#Lancement et Test)
+[Voir la partie Lancement et Test](#Lancement)
 
 
 # Fonctionnement Principal
@@ -119,7 +124,7 @@ Les modules sont :
 - server.ml -> module du serveur, contient toutes les fonctions utiles.
 - sprite.ml -> permet d'afficher des images selon un ordre de priorité et de les animer.
 
-# Lancement et Test
+# Lancement
 
 Les fichiers du dossier Code/Game :
 * launcher.ml
@@ -129,6 +134,7 @@ sont disponibles à l'exécution et présentent respectivement le launcher du je
 
 Le fichier
 * serveur.ml
+
 contient le code du serveur (mais celui-ci n'a pas pu être testé en raison de nombreux problèmes avec la fonction input_line...)
 
 ------------
