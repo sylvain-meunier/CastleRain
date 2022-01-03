@@ -4,7 +4,3 @@ Chaque élément est de type token.
 
 Chaque élément est présent dans une liste globale, qui indiquer leur ordre de priorité.
 Ainsi, l'on peut savoir à partir de quel élément il faut retracer lorsqu'un élément disparaît.
-
-Les éléments so
-
-Interface :

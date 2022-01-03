@@ -1,22 +1,21 @@
-Type Couple : ('a, 'b)
-
 Interface :
-| write_on_wind : author:str text:str debut:int fin:int -> unit : écrit un texte sur la fenêtre, fin et début sont inclus
-| cutext : text:str -> Couple int int : renvoie l'indice de début et de fin du texte à écrire sur une même ligne de la fenêtre
-| get_msg : unit -> str : récupère les éventuels messages envoyés par le serveur
-| sendmsg : unit -> unit : envoie le message entré au serveur, et l'affiche au niveau du client
-| writemsg : msg:char array -> unit : met à jour le tableau qui correspond à la chaine de caractère qui représente le message du joueur en fonction de la touche qui a été enfoncée
-| print_msg : msg:char array -> unit : met à jour l'affichage du message qu'est en train d'écrire le joueur
+| show_msg_on_screen : author:str text:str -> unit : écrit un texte sur la fenêtre
+| clien_fun : in_channel -> unit : récupère les éventuels messages envoyés par le serveur
+| send_msg : unit -> unit : envoie le message entré au serveur, et l'affiche au niveau du client
+| f_key : char -> unit : met à jour le tableau qui correspond à la chaine de caractère qui représente le message du joueur en fonction de la touche qui a été enfoncée
+| display_written : msg:char array -> unit : met à jour l'affichage du message qu'est en train d'écrire le joueur
 
 Fonctionnement :
 Le programme se compose de 2 threads
--   Dès qu'un message est reçu, il est lu par la fonction get_msg, puis le texte est décodé par la fonction cutext, et ajouté dans une liste partagée par les deux threads.
--   Dès que la liste contenant des messages n'est pas vide, la fonction write_on_wind est appelée et affiche les nouveaux messages à l'écran.
--   La fonction writemsg permet au client courant d'écrire des messages, en mettant à jour un tableau de caractère (à taille maximale fixée)
-    Cette mise à jour est indiquée au joueur par l'action de la fonction print_msg.
-    Si ce dernier appuie sur la touche correspondant à l'envoi d'un message, la fonction sendmsg est appelée, qui envoie le message à tous les clients.
+-   Dès qu'un message est reçu, il est lu par la fonction clien_fun, puis le texte est décodé et ajouté dans une liste partagée par les deux threads.
+-   La fonction display_msgs affiche les messages contenus dans la liste à l'écran en permanence, en la vidant si jamais aucun message ne peut plus être affiché par manque de place.
+-   La fonction f_key permet au client courant d'écrire des messages, en mettant à jour un tableau de caractère (à taille maximale fixée)
+    Cette mise à jour est indiquée au joueur par l'action de la fonction display_written.
+    Si ce dernier appuie sur la touche correspondant à l'envoi d'un message, la fonction send_msg est appelée, qui envoie le message à tous les clients.
     Le message est alors reçu et traité par la première thread.
 
+Remarque : Bien que le curseur ne s'affiche pas, il est possible de se déplacer dans le texte en utilisant les flèches de gauche et de droite.
+
 Améliorations possibles :
-- retenir les messages reçus dans un fichier
-- faire un système de page afin de pouvoir afficher tous les messages (il faudrait alors une structure de données appropriée) et un moyen de passer d'une page à l'autre
+- retenir les messages reçus dans un fichier -> memchat.out
+- faire un système de page afin de pouvoir afficher tous les messages (il faudrait alors une structure de données appropriée) et un moyen de passer d'une page à l'autre -> juste avant que la liste ne soit vidée, il suffirait de l'ajouter à un tableau dynamique globale et de détecter l'appui sur une touche avec le module Fleche de castlerain.ml (par exemple la combinaison flèche de gauche/droite + shift) pour modifier le contenu de la liste commune aux threads en fonction.

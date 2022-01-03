@@ -138,15 +138,14 @@ struct
                let sock = Unix.socket domain Unix.SOCK_STREAM 0 in
                begin
                   Unix.bind sock sockaddr ;
-                  Printf.printf "SUCCESS \n" ;
-                  Printf.printf "%!" ;
+                  Printf.printf "SUCCESS\n%:" ;
                   cond := false ;
                   answer oc ("LAUNCHED " ^ (string_of_int (port + !c))) ;
                   match Unix.fork () with
                   | 0 -> game_server !c nb sock
                   | pid -> exit 0 ;
                end
-            with _ -> (c := !c + 1; Printf.printf "FAILURE\n%!"; Printf.printf "%!" ;)
+            with _ -> (c := !c + 1; Printf.printf "FAILURE\n%!";)
          done ;
          answer oc "FAILURE 0" ;
       end
@@ -156,8 +155,8 @@ struct
          let s = input_line ic in
          let command, nb = Scanf.sscanf s "%s %d" (fun x y -> x, y) in
             begin
-               if String.equal command "LAUNCH" then Printf.printf "SUCCESS"
-               else (Printf.printf "Invalid command\n%!") ;
+               if String.equal command "LAUNCH" then find_port oc nb
+               else (Printf.printf "Invalid command : %s\n%!" s; answer oc "INVALID") ;
             end
       end
 

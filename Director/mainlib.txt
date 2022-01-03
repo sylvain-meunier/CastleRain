@@ -1,7 +1,0 @@
-# Ce fichier contient une liste des toutes les fonctions qui seront nécessaire au bon fonctionnement du projet
-# Remarque : On considère ces fonctions existantes dans tous les directeurs
-
-- wait_touches : renvoie true ou false selon si une certaine combinaison de touches est entrée
-- search_word : permet de trouver des informations dans un texte ou un fichier
-
-écrire / lire dans un fichier qui n'est pas ouvert
