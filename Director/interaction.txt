@@ -1,0 +1,5 @@
+faire la grille : tableau avec nom, image et description (item à l'achat)
+afficher les noms et les images dynamiquement (à mettre à jour dès qu'on arrive en bas de page)
+gérer l'appui sur :
+    - touche entrée
+    - flèches

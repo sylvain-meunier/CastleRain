@@ -5,31 +5,19 @@
 #directory "+threads" ;;
 #load "threads.cma" ;;
 
+#use "../Modules/castlerain.ml" ;;
 #use "../Modules/sprite.ml" ;;
 
-let screen_x, screen_y = let screen = Unix.open_process_in "xrandr" in Scanf.sscanf (input_line screen) "%s %s %s %s %s %s current %d x %d" (fun s1 s2 s3 s4 s5 s6 y z -> y, z) ;;
+exception Game ;;
 
-let create_win winx winy title truetitle =
-  begin
-    Graphics.open_graph (" " ^ winx ^ "x" ^ winy ^ "+0+0") ;
-    Graphics.set_window_title title ;
-    Graphics.auto_synchronize false ;
-    let window_id = (let screen = Unix.open_process_in ("xdotool search --name \"" ^ title ^ "\"") in Scanf.sscanf (input_line screen) "%s" (fun x -> x)) in
-      begin
-        ignore (Unix.system ("xdotool set_window --name \"" ^ truetitle ^ "\" " ^ window_id)) ;
-        window_id ;
-      end
-    end
+let window_id = Init.create_win Init.launch_x Init.launch_y "LauncherCRrain" Init.launchername "" in
+let xpos = string_of_int ((Init.screen_x - (int_of_string Init.launch_x))/2) and ypos = string_of_int ((Init.screen_y - (int_of_string Init.launch_y))/2) in ignore (Unix.system("xdotool windowmove " ^ window_id ^ " " ^ xpos ^ " " ^ ypos)) ;;
 
-let launch_x = "600" and launch_y = "450" ;;
+let draw_texte texte = 
+  let x = Graphics.size_x () and y = Graphics.size_y () and dx, dy = Graphics.text_size texte in Graphics.moveto ((x-dx)/2) ((y-dy)/2);
+  Graphics.draw_string texte ;;
 
-let window_id = create_win launch_x launch_y "LauncherCRrain" "[CastleRain - Launcher]" in
-let xpos = string_of_int ((screen_x - (int_of_string launch_x))/2) and ypos = string_of_int ((screen_y - (int_of_string launch_y))/2) in ignore (Unix.system("xdotool windowmove " ^ window_id ^ " " ^ xpos ^ " " ^ ypos)) ;;
-
-let texte = "Chargement en cours ..." ;;
-
-let x = Graphics.size_x () and y = Graphics.size_y () and dx, dy = Graphics.text_size texte in Graphics.moveto ((x-dx)/2) ((y-dy)/2) ;;
-Graphics.draw_string texte ;;
+let texte = "Chargement en cours ..." in draw_texte texte ;;
 Graphics.synchronize () ;;
 
 let chateau = Sprite.create 0 (-300) "../../Images/launcher/cas" 3 1 true and bg = Sprite.create 0 0 "../../Images/launcher/bg" 8 0 true and logo = Sprite.create 300 520 "../../Images/launcher/logo" 7 10 true and alfred = Sprite.create 300 460 "../../Images/Sprite/Alfred_s" 5 2 true and name = Sprite.create 0 (-252) "../../Images/launcher/name" 1 5 false ;;
@@ -59,11 +47,12 @@ let show_main_button () = let dy = 3 in
       Sprite.update_one bout_join ;
       Sprite.update_one bout_leave ;
       Sprite.update_one bout_launch ;
-      Unix.sleepf 0.15 ;
+      Unix.sleepf 0.2 ;
     done ;
   end ;;
     
 let close_window () = Graphics.close_graph () in Sprite.set_function bout_leave close_window ;;
+let game_start (a:unit):unit = raise Game in Sprite.set_function bout_launch game_start ;;
 
 Sprite.center_x logo ;;
 Sprite.center_x alfred ;;
@@ -92,7 +81,7 @@ for i=0 to 105 do
   Sprite.show_all () ;
   Graphics.synchronize () ;
 
-  Unix.sleepf 0.15 ;
+  Unix.sleepf 0.2 ;
 done ;;
 
 try
@@ -118,4 +107,42 @@ while true do
     Unix.sleepf 0.15 ;
   done ;
 done
-with _ -> () ;;
+with
+  | Game -> ()
+  | _ -> Close.close [||] ;;
+
+(* A terme ceci sera dans un autre fichier : game.ml *)
+
+#use "./chat.ml" ;;
+
+(* let launch_game () =
+  let window_id = Init.create_win Init.game_x Init.game_y "game_geeettttttt dunked on!!" "[CastleRain - Game]" "game.id" in
+  let xpos = string_of_int ((Init.screen_x - (int_of_string Init.game_x) - (int_of_string Init.chat_x))/2) and ypos = string_of_int ((Init.screen_y - (int_of_string Init.game_y))/2) in ignore (Unix.system("xdotool windowmove " ^ window_id ^ " " ^ xpos ^ " " ^ ypos)) ;;
+  *)
+
+let launch_game () =
+  let window_id = Init.get_window_id Init.launchername in
+				begin
+					ignore (Unix.system ("xdotool set_window --name \"" ^ Init.gamename ^ "\" " ^ window_id)) ;
+          let xpos = string_of_int ((Init.screen_x - (int_of_string Init.game_x) - (int_of_string Init.chat_x))/2) and ypos = string_of_int ((Init.screen_y - (int_of_string Init.game_y))/2) in ignore (Unix.system("xdotool windowmove " ^ window_id ^ " " ^ xpos ^ " " ^ ypos)) ;
+          ignore (Unix.system ("xdotool windowsize " ^ window_id ^ " " ^ Init.game_x ^ " " ^ Init.game_y)) ;
+        end ;;
+
+let pids = ref [||] ;;
+
+(* Lance les fonctions correspondants aux différentes parties du programme *)
+
+match Unix.fork () with
+| 0 -> (Chat.func (); exit 0)
+| cpid -> pids := [|cpid; Unix.getpid ()|] ;;
+
+launch_game () ;;
+
+(* Pas très élégant mais nécessaire vu la qualité de Graphics *)
+#use "../Modules/player.ml" ;;
+
+draw_texte "Utilisez les flèches pour vous déplacer !\n(Seul le mode Showcase est malheureusement disponible...)\nVous pouvez également utiliser le chat à côté ->\nUtilisez entrée pour envoyer un message et les flèches pour déplacer le curseur" ;;
+
+Player.func () ;;
+
+Close.close !pids ;;

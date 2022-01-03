@@ -1,0 +1,12 @@
+si maison : afficher les images concernées
+
+sinon, afficher la map comme plein de carrés qui découpent une grande image, mettre à jour les carrés qui doivent être redessinés puis déplacer le joueur
+! : gérer les collisions dans les deux cas
++ les interactions et leurs effets
+
+-> avoir un raccourci / un item qui permet de se déplacer :
+afficher une map avec tous les endroits disponibles, et gérer l'animation de marche à cet endroit (peut se faire depuis la fenêtre de jeu principal car la map devra être rechargée dans tous les cas)
+-> où faire spawner le joueur ?
+
+xmodmap -> transformer les flèches en appui sur les touches : w a q s
+sortie de l'inventaire avec 

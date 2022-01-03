@@ -10,3 +10,6 @@ Fonctionnement :
 Lance le launcher et exécute le code associé afin que le client puisse créer ou rejoindre une partie
 Ensuite, crée 4 les 4 fenêtres de jeu dans différents processus, communiquant entre eux par des fichiers
 Puis gère le jeu, notamment la fermeture des fenêtres en fin d'exécution, en tuant les processus enfants, puis relance le launcher.
+
+Améliorations :
+faire une animation au niveau de la création des fenêtres :

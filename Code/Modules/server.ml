@@ -4,7 +4,7 @@
 
 module Server =
 struct
-   let port = 240
+   let port = 2400
 
    let get_my_addr () = (Unix.gethostbyname(Unix.gethostname())).Unix.h_addr_list.(0)
 
@@ -13,8 +13,9 @@ struct
       let sock = Unix.socket domain Unix.SOCK_STREAM 0 
       in Unix.bind sock sockaddr ;
          Unix.listen sock 20;
+         Printf.printf "Server Ready\n%!" ;
          while true do
-            let (s, caller) = Unix.accept sock 
+            let (s, caller) = Unix.accept sock
             in match Unix.fork() with
                   | 0 -> (if Unix.fork() <> 0 then exit 0 ;
                         let inchan = Unix.in_channel_of_descr s 
@@ -22,8 +23,9 @@ struct
                         in server_fun inchan outchan ;
                            close_in inchan ;
                            close_out outchan ;
+                           Unix.close s ;
                            exit 0)
-                  | id -> (Unix.close s; ignore(Unix.waitpid [] id))
+                  | id -> () ;
          done
       
    let main_server serv_fun sport =
@@ -125,40 +127,42 @@ struct
       end
 
    let find_port oc nb =
-      let c = ref 0 in
+      let c = ref 1 in
       begin
          let mon_adresse = get_my_addr () and cond = ref true in
          while !c < 400 && !cond do
+            Printf.printf "TRYING : %d ->" !c ;
             try
-               let sockaddr = (Unix.ADDR_INET(mon_adresse, !c)) in
+               let sockaddr = (Unix.ADDR_INET(mon_adresse, port + !c)) in
                let domain = Unix.domain_of_sockaddr sockaddr in
                let sock = Unix.socket domain Unix.SOCK_STREAM 0 in
                begin
                   Unix.bind sock sockaddr ;
+                  Printf.printf "SUCCESS \n" ;
+                  Printf.printf "%!" ;
                   cond := false ;
                   answer oc ("LAUNCHED " ^ (string_of_int (port + !c))) ;
                   match Unix.fork () with
                   | 0 -> game_server !c nb sock
-                  | pid -> exit 0
+                  | pid -> exit 0 ;
                end
-            with _ -> c := !c + 1;
+            with _ -> (c := !c + 1; Printf.printf "FAILURE\n%!"; Printf.printf "%!" ;)
          done ;
          answer oc "FAILURE 0" ;
       end
 
    let answer_back ic oc =
-      try
-         while true do
-            let s = input_line ic in
-            let command, nb = Scanf.sscanf s "%s %d" (fun x y -> x, y) in
-               begin
-                  if String.equal command "LAUNCH" then (find_port oc nb; exit 0;)
-               end
-         done
-      with _ -> (Printf.printf "Fin\n %!"; exit 0)
+      begin
+         let s = input_line ic in
+         let command, nb = Scanf.sscanf s "%s %d" (fun x y -> x, y) in
+            begin
+               if String.equal command "LAUNCH" then Printf.printf "SUCCESS"
+               else (Printf.printf "Invalid command\n%!") ;
+            end
+      end
 
-   let launch () = Unix.handle_unix_error main_server answer_back port
+   let launch () = main_server (answer_back) port
 
 end ;;
 
-(* Server.launch () ;; *)
+Server.launch () ;;

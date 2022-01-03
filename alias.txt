@@ -5,8 +5,11 @@
 .xmm : contient les paramètres initiaux de xmodmap
 .id : contient l'identifiant d'une fenêtre
 .ts : fichier de transfert d'information entre les différentes parties du programme. Peut servir à débugger. Vidé de toute information à chaque fois que le jeu est lancé.
+    - tsin : le programme lit dans ce fichier
+    - tsout : le programme écrit dans ce fichier
 .img : contient une image codée sous une forme compréhensible par Graphics
 
+Non utilisé :
 .chat : contient les messages d'un chat
 .map : contient les informations relatives à une maison
 .save : contient les données de jeu

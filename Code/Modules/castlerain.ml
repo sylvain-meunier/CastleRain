@@ -3,6 +3,30 @@
 
 module Init =
 struct
+	let screen_x, screen_y = let screen = Unix.open_process_in "xrandr" in Scanf.sscanf (input_line screen) "%s %s %s %s %s %s current %d x %d" (fun s1 s2 s3 s4 s5 s6 y z -> y, z)
+
+	let launch_x = "600" and launch_y = "450"
+	let game_x = "700" and game_y = "500"
+	let chat_x = "300" and chat_y = game_y
+
+	let launchername = "[CastleRain - Launcher]"
+	and gamename = "[CastleRain - Game]"
+	and chatname = "[CastleRain - Chat]"
+
+	let create_win winx winy title truetitle filename =
+		begin
+			Graphics.open_graph (" " ^ winx ^ "x" ^ winy ^ "+0+0") ;
+			Graphics.set_window_title title ;
+			let window_id = (let screen = Unix.open_process_in ("xdotool search --name \"" ^ title ^ "\"") in Scanf.sscanf (input_line screen) "%s" (fun x -> x)) in
+				begin
+					ignore (Unix.system ("xdotool set_window --name \"" ^ truetitle ^ "\" " ^ window_id)) ;
+					if filename <> "" then ignore (let oc = open_out filename in (Printf.fprintf oc "%s" window_id; close_out oc)) ;
+					window_id ;
+				end
+			end
+	
+	let get_window_id title = (let screen = Unix.open_process_in ("xdotool search --name \"" ^ launchername ^ "\"") in Scanf.sscanf (input_line screen) "%s" (fun x -> x))
+
 	let allow_arrow_press () =
 		begin
 		ignore (Unix.system "xmodmap -pke > ./touchmem.xmm");
@@ -28,9 +52,17 @@ end ;;
 
 module Close =
 struct
-	let close () =
+	let killall pids =
+		for i=0 to (Array.length pids) - 1 do
+			try
+				Unix.kill pids.(i) Sys.sigkill
+			with _ -> ()
+		done
+	
+	let close pidlist =
 		begin
 			ignore (Unix.system "xmodmap ./touchmem.xmm");
+			killall pidlist ;
 			exit 0;
 		end
 end ;;

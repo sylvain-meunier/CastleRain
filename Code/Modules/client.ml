@@ -4,8 +4,8 @@
 
 module Client =
 struct
-  let serverip = "127.0.0.1"
-  let serverport = 240
+  let serverip = "127.0.1.1"
+  let serverport = 2400
 
   let chat_in = open_in "./chat.tsout" and chat_out = open_out "./chat.tsin"
 
@@ -27,11 +27,18 @@ struct
  
   let client_fun ic oc = 
     try
-      while true do
-        
-      done
+      begin
+        flush oc ;
+        output_string oc "LAUNCH 1" ;
+        flush oc ;
+        Printf.printf "WAITING %!" ;
+        let ans = input_line ic in
+          begin
+            Printf.printf "%s\n %!" ans ;
+          end
+      end
     with 
-      |  Exit -> exit 0
+      | Exit -> exit 0
       | exn -> (shutdown_connection ic ; raise exn)
  
   let launch () = main_client client_fun
