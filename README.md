@@ -17,6 +17,8 @@ Remarque : Ce projet est loin d'être achevé, cependant les idées générales 
 
 Remarque : Les fichiers de code contiennent peu (ou pas) de commentaire car cela risquait de rendre le code moins lisible (d'un point de vue subjectif)
 
+[]Voir la partie Lancement et Test](#Lancement et Test)
+
 
 # Fonctionnement Principal
 
@@ -30,7 +32,7 @@ Le launcher est censé permettre d'initialiser la connexion au serveur, ainsi qu
 * Lorsqu'on appuie sur le bouton 'Rejoindre une partie', il est demandé d'entrer l'identifiant de la partie, puis le pseudo le cas échéant (de la même façon que précédemment).
 * Le bouton quitter le jeu permet de... fermer la fenêtre du launcher, qui envoie alors cette information dans son fichier de sortie.
 
-# Programme Principal (Client)
+## Programme Principal (Client)
 La sortie du launcher est lue, et transmise au serveur le cas échéant, ou tue tous les processus créés avant de s'arrêter.
 
 ## Serveur (port principal : 2400)
@@ -48,7 +50,7 @@ Le serveur stocke ces informations dans des listes, contenant également les in_
 ## Launcher
 Un joueur peut alors utiliser le bouton 'Rejoindre une partie' et entrer le code pour se joindre au joueur précédent.
 
-# Programme Principal
+## Programme Principal
 Dès qu'un joueur rejoint ou quitte la partie, le client devrait être prévenu afin d'afficher une animation (par exemple un sprite représentant un joueur et son pseudo rejoint ou quitte l'écran)
 
 ## Serveur (port secondaire : 24xx)
@@ -122,6 +124,7 @@ Les modules sont :
 Les fichiers du dossier Code/Game :
 * launcher.ml
 * game.ml
+
 sont disponibles à l'exécution et présentent respectivement le launcher du jeu, et la fenêtre principale ainsi que le chat.
 
 Le fichier
