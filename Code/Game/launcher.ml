@@ -47,7 +47,7 @@ let show_main_button () = let dy = 3 in
       Sprite.update_one bout_join ;
       Sprite.update_one bout_leave ;
       Sprite.update_one bout_launch ;
-      Unix.sleepf 0.2 ;
+      Unix.sleepf 0.04 ;
     done ;
   end ;;
     
@@ -63,15 +63,15 @@ Sprite.center_x name ;;
 Sprite.update_one logo ;;
 
 alfred.anim_tot <- 4 ;;
+Sprite.set_animation alfred 1 ;
 
 for i=0 to 105 do
   Sprite.animation bg (i mod 3 = 0) ;
   Sprite.animation chateau true ;
-  Sprite.animation logo (i mod 3 <> 0) ;
 
   if i <= 38 then Sprite.rmove chateau 0 5 false ;
   if i <= 105 then Sprite.rmove logo 0 (-2) false ;
-  if i <= 100 then (Sprite.rmove alfred 0 (-2) false; Sprite.animation alfred (i mod 3 <> 0)) ;
+  if i <= 100 then (Sprite.rmove alfred 0 (-2) false; Sprite.animation alfred (i mod 3 = 0)) ;
   if i = 100 then Sprite.animation alfred true ;
   if i = 12 then ignore (Thread.create (show_main_button) ()) ;
   if i = 103 then Sprite.set_animation alfred 4;
@@ -81,12 +81,15 @@ for i=0 to 105 do
   Sprite.show_all () ;
   Graphics.synchronize () ;
 
-  Unix.sleepf 0.2 ;
+  Unix.sleepf 0.04 ;
 done ;;
 
+let anim_logo i = int_of_float (5. *. (sin (Float.pi /. 10.5 *. (float_of_int i)))) ;;
+
 try
+let logo_x = logo.posx and logo_y = logo.posy in
 while true do
-  for i = 0 to 9 do
+  for i = 1 to 21 do
     reset_button boutons ;
 
     let ev = Graphics.wait_next_event [Graphics.Poll] in
@@ -100,7 +103,9 @@ while true do
 
     Sprite.animation bg (i mod 3 = 0) ;
     Sprite.animation chateau true ;
-    Sprite.animation logo (i mod 3 <> 0) ;
+
+    Sprite.move logo logo_x (logo_y + anim_logo i) (i mod 3 <> 0) ;
+    Sprite.update_one logo ;
 
     Sprite.show_all () ;
     Graphics.synchronize () ;

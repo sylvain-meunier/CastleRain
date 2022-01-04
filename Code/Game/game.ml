@@ -26,15 +26,19 @@ launch_game () ;;
 #use "../Modules/player.ml" ;;
 
 Graphics.moveto 200 350 ;
-Graphics.draw_string "Utilisez les fleches pour vous deplacer !" ;
+Graphics.draw_string "Essayez de toucher les cercles (Utilisez les fleches pour vous deplacer)" ;
 Graphics.moveto 200 300 ;
 Graphics.draw_string "(Seul le mode Showcase est malheureusement disponible pour l'instant...)" ;
 Graphics.moveto 200 250 ;
 Graphics.draw_string "Vous pouvez egalement utiliser le chat a cote ->" ;
 Graphics.moveto 200 200 ;
 Graphics.draw_string "Utilisez entree pour envoyer un message et les fleches pour deplacer le curseur" ;
+Graphics.moveto 200 150 ;
+Graphics.draw_string "Assurez-vous que la fenetre a bien le focus !" ;
 Graphics.moveto 200 400 ;
 Graphics.draw_string "Bienvenue sur CastleRain !" ;;
+
+Unix.sleepf 3. ;;
 
 Player.func () ;;
 

@@ -36,7 +36,7 @@ struct
 		ignore (Unix.system "xmodmap -e \"keysym  Down = 0xf3\"");
 		end
 	
-	let empty_file () = ignore (Unix.system ">chat.tsin >game.tsin >dial.tsin >chat.tsout >game.tsout >dial.tsout")
+	let empty_file () = ignore (Unix.system ">chat.tsin >game.tsin >chat.tsout >game.tsout")
 	let init () =
 		begin
 			allow_arrow_press () ;

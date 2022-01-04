@@ -2,9 +2,13 @@
 L'incroyable histoire d'Alfred, architecte honoraire.
 
 # Histoire
-Notre histoire se passe dans le département d'Euler, plus précisément au château de Mousselarge.
+Notre histoire se passe dans le département d'Euler.
+
 Vous avez été contacté par Rémi Tallumij afin de lui bâtir un château, qui doive bien sûr résister aux intemperies... ou à pire.
-Votre but sera donc de satisfaire votre client, en parvenant à passer les différentes inspections de votre maison, et dans la limite du budget imparti.
+
+C'est donc à vous qu'il confie la construction du château de Mousselarge.
+
+Votre but sera de satisfaire votre client, en parvenant à passer les différentes inspections de votre maison, et ce dans la limite du budget imparti.
 
 ## Initialisation
 Sous WSL2, les commandes suivantes sont nécessaires :
@@ -137,6 +141,10 @@ Le fichier
 
 contient le code du serveur (mais celui-ci n'a pas pu être testé en raison de nombreux problèmes avec la fonction input_line...)
 
+Un mini-jeu est accessible depuis la fenêtre principale.
+Assurez-vous que celle-ci a le focus (et pas celle du chat) et utilisez les flèches pour vous déplacer !
+Essayez de battre notre record !
+
 ------------
 
 Codé par 
@@ -144,3 +152,8 @@ Codé par
 * Gaëlle Saint-Paul
 
 (MP2I)
+
+Pixel Art
+* Altac
+
+(DLMI)

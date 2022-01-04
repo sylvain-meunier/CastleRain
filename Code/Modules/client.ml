@@ -34,7 +34,7 @@ struct
         Printf.printf "WAITING %!" ;
         let ans = input_line ic in
           begin
-            Printf.printf "%s\n %!" ans ;
+            Printf.printf "DEBUG : %s\n %!" ans ;
           end
       end
     with 

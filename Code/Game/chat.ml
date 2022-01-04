@@ -89,8 +89,8 @@ struct
 
 	let show_msg_on_screen word = let dx, dy = Graphics.text_size word in
 			begin
-				if (Graphics.current_x()) + dx + x_min_txt >= largeur_fenetre then retour_ligne word ;
-				if (Graphics.current_x()) + dx + x_min_txt >= largeur_fenetre then draw_by_char word
+				if Graphics.current_x() <> x_min_txt && (Graphics.current_x()) + dx + x_min_txt >= largeur_fenetre then retour_ligne word ;
+				if dx + x_min_txt >= largeur_fenetre then draw_by_char word
 				else Graphics.draw_string word
 			end
 
@@ -173,8 +173,9 @@ struct
 
 	let f_mouse x y = ()
 	let f_key k = match k with
-		| '\027' -> raise End
-		| '\008' -> (Pyliste.remove message_ecrit !carac_en_cours; carac_en_cours := max 0 (!carac_en_cours - 1))
+		| '\027' -> exit 0
+		| '\008' -> (Pyliste.remove message_ecrit (!carac_en_cours-1); carac_en_cours := max 0 (!carac_en_cours - 1))
+		| '\127' -> (Pyliste.remove message_ecrit (!carac_en_cours); if !carac_en_cours >= Pyliste.taille message_ecrit then carac_en_cours := max 0 (!carac_en_cours - 1))
 		| '\013' -> send_msg ()
 		| x when x = Fleche.left -> carac_en_cours := max 0 (!carac_en_cours - 1)
 		| x when x = Fleche.right -> carac_en_cours := min (message_ecrit.taille) (!carac_en_cours+1)
