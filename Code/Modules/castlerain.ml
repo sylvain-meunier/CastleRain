@@ -13,6 +13,7 @@ struct
 	and gamename = "[CastleRain - Game]"
 	and chatname = "[CastleRain - Chat]"
 
+	(* Crée une fenêtre centrée *)
 	let create_win winx winy title truetitle filename =
 		begin
 			Graphics.open_graph (" " ^ winx ^ "x" ^ winy ^ "+0+0") ;
@@ -25,8 +26,10 @@ struct
 				end
 			end
 	
+	(* Renvoie l'identifiant d'une fenêtre en fonction de son nom *)
 	let get_window_id title = (let screen = Unix.open_process_in ("xdotool search --name \"" ^ launchername ^ "\"") in Scanf.sscanf (input_line screen) "%s" (fun x -> x))
 
+	(* Permet de détecter l'appui sur les flèches avec Graphics (qui ignore normalement ces évènements) *)
 	let allow_arrow_press () =
 		begin
 		ignore (Unix.system "xmodmap -pke > ./touchmem.xmm");
@@ -36,7 +39,10 @@ struct
 		ignore (Unix.system "xmodmap -e \"keysym  Down = 0xf3\"");
 		end
 	
+	(* Réinitialise les fichiers *)
 	let empty_file () = ignore (Unix.system ">chat.tsin >game.tsin >chat.tsout >game.tsout")
+
+	(* Raccourci pour les fonctions précédentes *)
 	let init () =
 		begin
 			allow_arrow_press () ;
@@ -46,12 +52,14 @@ end ;;
 
 module Fleche =
 struct
+	(* Facilite la détection de l'appui sur les touches *)
 	let left = Char.chr 240 and right = Char.chr 241 and up = Char.chr 242 and down = Char.chr 243
 	let left_maj = Char.uppercase_ascii left and rigth_maj = Char.uppercase_ascii right and down_maj = Char.uppercase_ascii down and up_maj = Char.uppercase_ascii up
 end ;;
 
 module Close =
 struct
+	(* Tue les processus contenus dans la liste et met fin à l'exécution *)
 	let killall pids =
 		for i=0 to (Array.length pids) - 1 do
 			try
@@ -59,6 +67,7 @@ struct
 			with _ -> ()
 		done
 	
+	(* Rétablit les paramètres par défauts et met fin à l'exécution *)
 	let close pidlist =
 		begin
 			ignore (Unix.system "xmodmap ./touchmem.xmm");

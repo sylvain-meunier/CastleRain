@@ -16,6 +16,7 @@ let pids = ref [||] ;;
 
 (* Lance les fonctions correspondants aux différentes parties du programme *)
 
+(* Premièrement le chat *)
 match Unix.fork () with
 | 0 -> Chat.func ()
 | cpid -> pids := [|cpid; Unix.getpid ()|] ;;
@@ -25,6 +26,7 @@ launch_game () ;;
 (* Pas très élégant mais nécessaire vu la qualité de Graphics *)
 #use "../Modules/player.ml" ;;
 
+(* Affichage du message *)
 Graphics.moveto 200 350 ;
 Graphics.draw_string "Essayez de toucher les cercles (Utilisez les fleches pour vous deplacer)" ;
 Graphics.moveto 200 300 ;
@@ -38,8 +40,11 @@ Graphics.draw_string "Assurez-vous que la fenetre a bien le focus !" ;
 Graphics.moveto 200 400 ;
 Graphics.draw_string "Bienvenue sur CastleRain !" ;;
 
-Unix.sleepf 3. ;;
+Unix.sleepf 1. ;;
+
+(* Lancement du mini-jeu *)
 
 try
-  Player.func ()
+  Player.func () ;
+  Close.close !pids ;
 with _ -> Close.close !pids ;;

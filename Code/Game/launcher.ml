@@ -10,6 +10,8 @@
 
 exception Game ;;
 
+(* Affichage de la fenêtre *)
+
 let window_id = Init.create_win Init.launch_x Init.launch_y "LauncherCRrain" Init.launchername "" in
 let xpos = string_of_int ((Init.screen_x - (int_of_string Init.launch_x))/2) and ypos = string_of_int ((Init.screen_y - (int_of_string Init.launch_y))/2) in ignore (Unix.system("xdotool windowmove " ^ window_id ^ " " ^ xpos ^ " " ^ ypos)) ;;
 
@@ -20,6 +22,8 @@ let draw_texte texte =
 let texte = "Chargement en cours ..." in draw_texte texte ;;
 Graphics.synchronize () ;;
 
+(* Chargement des sprites utilisés *)
+
 let chateau = Sprite.create 0 (-300) "../../Images/launcher/cas" 3 1 true and bg = Sprite.create 0 0 "../../Images/launcher/bg" 8 0 true and logo = Sprite.create 300 520 "../../Images/launcher/logo" 7 10 true and alfred = Sprite.create 300 460 "../../Images/Sprite/Alfred_s" 5 2 true and name = Sprite.create 0 (-252) "../../Images/launcher/name" 1 5 false ;;
 
 let bout_join = Sprite.create 0 (-104) "../../Images/launcher/bouton_join" 2 15 false
@@ -28,9 +32,12 @@ and bout_leave = Sprite.create 0 (-164) "../../Images/launcher/bouton_leave" 2 1
 
 let boutons = [bout_join; bout_launch; bout_leave] ;;
 
+(* Remet l'affichage des boutons par défaut *)
 let rec reset_button boutons = match boutons with
 | [] -> ()
 | a::q -> (Sprite.set_animation a 0; reset_button q) ;;
+
+(* Permet de faire apparaître les boutons à l'écran *)
 
 let show_main_button () = let dy = 3 in
   begin
@@ -87,34 +94,39 @@ done ;;
 let anim_logo i = int_of_float (5. *. (sin (Float.pi /. 10.5 *. (float_of_int i)))) ;;
 
 try
-let logo_x = logo.posx and logo_y = logo.posy in
-while true do
-  for i = 1 to 21 do
-    reset_button boutons ;
+  let logo_x = logo.posx and logo_y = logo.posy in
+  while true do
+    for i = 1 to 21 do
+      reset_button boutons ;
 
-    let ev = Graphics.wait_next_event [Graphics.Poll] in
-    let mx = ev.mouse_x and my = ev.mouse_y in let tok = Sprite.tokens_at mx my in
-      if tok.priorite >= 15 then
+      (* Test si la souris passe sur un bouton *)
+      let ev = Graphics.wait_next_event [Graphics.Poll] in
+      let mx = ev.mouse_x and my = ev.mouse_y in let tok = Sprite.tokens_at mx my in
+        if tok.priorite >= 15 then
         begin
-          Sprite.set_animation tok 1 ;
-          if ev.button then tok.fire () ;
-        end
-      else () ;
+            (* Auquel cas change l'affichage de ce bouton *)
+            Sprite.set_animation tok 1 ;
+            if ev.button then tok.fire () ;
+          end
+        else () ;
 
-    Sprite.animation bg (i mod 3 = 0) ;
-    Sprite.animation chateau true ;
+      Sprite.animation bg (i mod 3 = 0) ;
+      Sprite.animation chateau true ;
 
-    Sprite.move logo logo_x (logo_y + anim_logo i) (i mod 3 <> 0) ;
-    Sprite.update_one logo ;
+      Sprite.move logo logo_x (logo_y + anim_logo i) (i mod 3 <> 0) ;
+      Sprite.update_one logo ;
 
-    Sprite.show_all () ;
-    Graphics.synchronize () ;
-    Unix.sleepf 0.15 ;
-  done ;
-done
+      Sprite.show_all () ;
+      Graphics.synchronize () ;
+      Unix.sleepf 0.15 ;
+    done ;
+  done
 with
   | Game -> ()
-  | _ -> Close.close [||] ;;
+  | _ -> exit 0 ;;
+
+(*/!\ Le code qui suit ne marche pas car Graphics ne tolère pas qu'on ferme une fenêtre pour en ouvrir une autre, et car faire un fork sur une fenêtre déjà ouverte semble poser de sérieux problèmes aux X serveur *)
+(* Pour voir ce qui aurait dû s'afficher, il faudra lancer le fichier game.ml *)
 
 (* A terme ceci sera dans un autre fichier : game.ml *)
 

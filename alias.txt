@@ -8,6 +8,7 @@
     - tsin : le programme lit dans ce fichier
     - tsout : le programme écrit dans ce fichier
 .img : contient une image codée sous une forme compréhensible par Graphics
+.score : contient un... score.
 
 Non utilisé :
 .chat : contient les messages d'un chat
