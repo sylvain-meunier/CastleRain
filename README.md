@@ -145,6 +145,9 @@ contient le code du serveur (mais celui-ci n'a pas pu être testé en raison de 
 
 Un mini-jeu est accessible depuis la fenêtre principale.
 Assurez-vous que celle-ci a le focus (et pas celle du chat) et utilisez les flèches pour vous déplacer !
+
+Le but est simple : accumuler le plus de points en évitant les gommes (représentées par des carrées rouges) qui effacent l'espace de jeu.
+
 Essayez de battre notre record !
 
 ------------
