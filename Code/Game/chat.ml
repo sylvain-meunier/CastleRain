@@ -173,7 +173,7 @@ struct
 
 	let f_mouse x y = ()
 	let f_key k = match k with
-		| '\027' -> exit 0
+		| '\027' -> raise End
 		| '\008' -> (Pyliste.remove message_ecrit (!carac_en_cours-1); carac_en_cours := max 0 (!carac_en_cours - 1))
 		| '\127' -> (Pyliste.remove message_ecrit (!carac_en_cours); if !carac_en_cours >= Pyliste.taille message_ecrit then carac_en_cours := max 0 (!carac_en_cours - 1))
 		| '\013' -> send_msg ()

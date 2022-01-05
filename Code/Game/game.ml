@@ -40,6 +40,6 @@ Graphics.draw_string "Bienvenue sur CastleRain !" ;;
 
 Unix.sleepf 3. ;;
 
-Player.func () ;;
-
-Close.close !pids ;;
+try
+  Player.func ()
+with _ -> Close.close !pids ;;
