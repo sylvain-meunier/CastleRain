@@ -54,7 +54,7 @@ let show_main_button () = let dy = 3 in
       Sprite.update_one bout_join ;
       Sprite.update_one bout_leave ;
       Sprite.update_one bout_launch ;
-      Unix.sleepf 0.04 ;
+      Unix.sleepf 0.05 ;
     done ;
   end ;;
     
@@ -88,10 +88,10 @@ for i=0 to 105 do
   Sprite.show_all () ;
   Graphics.synchronize () ;
 
-  Unix.sleepf 0.04 ;
+  Unix.sleepf 0.05 ;
 done ;;
 
-let anim_logo i = int_of_float (5. *. (sin (Float.pi /. 10.5 *. (float_of_int i)))) ;;
+let anim_logo i = int_of_float (5. *. (sin (Float.pi /. 5.25 *. (float_of_int i)))) ;;
 
 try
   let logo_x = logo.posx and logo_y = logo.posy in
@@ -118,7 +118,7 @@ try
 
       Sprite.show_all () ;
       Graphics.synchronize () ;
-      Unix.sleepf 0.15 ;
+      Unix.sleepf 0.3 ;
     done ;
   done
 with

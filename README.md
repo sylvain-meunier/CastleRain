@@ -99,13 +99,14 @@ Cette partie est composée de 2 scripts :
 ## Fichiers
 * README.md -> ce fichier
 * alias.txt -> explicite les extensions utilisées dans cette application ainsi que le contenu des fichiers concernés
-* main.ml -> pas le fichier principal
+* main.ml -> pas le fichier principal, comme son nom l'indique
+* le dossier Images contient un fichier de code : ```convert.py```, qui permet de transformer un fichier .png en un fichier .img
 
 ## Dossiers
 * Code contient les fichiers de code
 
     * Game -> contient les fichiers de code
-    * Modules -> contient les Modules (voir plus bas)
+    * Modules -> contient les Modules ([voir les Modules](##Modules))
 
 * Images contient les fichiers relatifs aux images, notamment les fichiers en .img (qui code une matrice représentant une image)
 
