@@ -130,6 +130,8 @@ Les modules sont :
 
 # Lancement
 
+Avant de lancer un fichier, placer dans le même répértoire que ce fichier (par exemple, pour lancer le launcher, il faut faire un cd jusqu'au dossier ```Code/Game``` puis exécuter la commande ```ocaml launcher.ml```)
+
 Les fichiers du dossier Code/Game :
 * launcher.ml
 * game.ml
