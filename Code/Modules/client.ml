@@ -7,41 +7,82 @@ struct
   let serverip = "127.0.1.1"
   let serverport = 2400
 
-  let chat_in = open_in "./chat.tsout" and chat_out = open_out "./chat.tsin"
+  let sendtoserver oc text =
+    begin
+      output_string oc (text^"\n") ;
+      flush oc ;
+    end
+  
+  (* Renvoie la commande et l'information basique contenue dans un message *)
+  let decode answer = Scanf.sscanf answer "%s %d" (fun x y -> x, y)
 
   let open_connection sockaddr =
     let domain = Unix.domain_of_sockaddr sockaddr in
     let sock = Unix.socket domain Unix.SOCK_STREAM 0 
-    in try Unix.connect sock sockaddr ;
-           (Unix.in_channel_of_descr sock , Unix.out_channel_of_descr sock)
+    in
+      try Unix.connect sock sockaddr ;
+          (Unix.in_channel_of_descr sock , Unix.out_channel_of_descr sock)
       with exn -> (Unix.close sock ; raise exn)
- 
-  let shutdown_connection inchan =
-    Unix.shutdown (Unix.descr_of_in_channel inchan) Unix.SHUTDOWN_SEND
   
-  let main_client client_fun =
+  let connect_to_server port =
       let serveur_adr = Unix.inet_addr_of_string serverip in
-      let sockadr = Unix.ADDR_INET(serveur_adr, serverport) in 
-      let ic,oc = open_connection sockadr in
-      (client_fun ic oc ; shutdown_connection ic)
- 
-  let client_fun ic oc = 
+      let sockadr = Unix.ADDR_INET(serveur_adr, port) in 
+      open_connection sockadr
+
+  exception SERVER_ERROR
+
+  (* Ferme la connexion courante avec le serveur, et renvoie un nouveau couple de in/out channel *)
+  let ask_launch ic oc nb_player =
     try
       begin
-        flush oc ;
-        output_string oc "LAUNCH 1" ;
-        flush oc ;
-        Printf.printf "WAITING %!" ;
+        sendtoserver oc ("LAUNCH "^(string_of_int nb_player)) ;
         let ans = input_line ic in
+        let com, port = decode ans in
           begin
-            Printf.printf "DEBUG : %s\n %!" ans ;
+            Printf.printf "OKAY : %s%!" com ;
+            if not (String.equal com "LAUNCHED") then raise SERVER_ERROR ;
+            close_out oc ;
+            Printf.printf "PORT :  %d\n%!" port ;
+            connect_to_server port ;
           end
       end
     with 
       | Exit -> exit 0
-      | exn -> (shutdown_connection ic ; raise exn)
+      | exn -> (close_out oc ; raise exn)
+    
+  let get_text_msg msg = String.sub msg 5 (String.length msg - 5)
+    
+  (* Attends que le serveur démarre la partie *)
+  let wait_players ic oc pseudo room =
+    begin
+      sendtoserver oc ("PSEUDO " ^ (String.trim pseudo)) ;
+      sendtoserver oc ("ROOM " ^ room) ;
+      let ans = input_line ic in
+      let command, nb = decode ans in
+      Printf.printf "Current player : %d\n%!" nb ;
+      let nb_ = ref nb in
+      while (let com, nb = decode (input_line ic) in nb_ := nb; not (String.equal com "START")) do
+        (* Affiche le nombre de joueurs *)
+        Printf.printf "Current player : %d\n%!" !nb_ ;
+        Unix.sleepf 0.01 ;
+      done ;
+      Printf.printf "STARTING !\n%!" ;
+      (ic, oc) ;
+    end
+  
+  let join dport pseudo room =
+    let ic, oc = connect_to_server (serverport + dport) in wait_players ic oc pseudo room
  
-  let launch () = main_client client_fun
+  (* Renvoie les in/out channel connectés au bon serveur *)
+  let launch nb_player pseudo room =
+    let ic1, oc1 = connect_to_server serverport in
+    let ic, oc = ask_launch ic1 oc1 nb_player in wait_players ic oc pseudo room
+
+  (* Teste si le serveur est accessible *)
+  let ping () =
+    let ic, oc = connect_to_server serverport in
+    let _ = sendtoserver oc "PING 0" in
+    String.equal (input_line ic) "PONG"
 
  end ;;
 
@@ -51,24 +92,19 @@ struct
 (* Quitter le jeu *)
 
 (*QUAND JOIN :
-PSEUDO\n
-<pseudo>
-ROOM\n
-<room>
+PSEUDO <pseudo>\n
+ROOM <room>
 
 QUAND LAUNCH :
 LAUNCH <nb>
 
 QUAND MOUVEMENT :
 PLAYER\n
-PSEUDO <pseudo>\n
-ROOM <room>\n
-HEAD <dir> <anim>\n
-POS <x> <y>\n
+PSEUDO <pseudo> ROOM <room> HEAD <dir> <anim> POS <x> <y>
 
 QUAND CHAT:
-CHAT\n
-<msg>
+CHAT <msg>
 
 QUAND DEND :
-DEND*)
+DEND
+*)

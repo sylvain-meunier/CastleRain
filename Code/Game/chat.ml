@@ -4,8 +4,9 @@
 #load "threads.cma";;
 #require "graphics";;
 
-#use "../Modules/pyliste.ml" ;;
 #use "../Modules/castlerain.ml" ;;
+#use "../Modules/pyliste.ml" ;;
+#use "../Modules/client.ml" ;;
 
 module Chat =
 struct
@@ -15,9 +16,6 @@ struct
 	let reset_mem () = Unix.system "cat ./memchat.out >chat.tsin"
 
 	let file_in_path = "./chat.tsin" and file_out_path = "./chat.tsout" and memchat_path = "./memchat.out"
-
-	(* Permet de lier le canal de sortie et d'entrée (seulement à des fins de démonstrations) *)
-	let showcase = open_out file_in_path
 
 	let file_in = open_in file_in_path and file_out = open_out file_out_path and memchat = open_out memchat_path
 
@@ -54,15 +52,13 @@ struct
 	let retour_ligne word = let dx, dy = Graphics.text_size word in Graphics.moveto x_min_txt (Graphics.current_y () - dy)
 
 	(* Permet d'envoyer un messagr *)
-	let send_msg () = let msg = ((author^"|"^(charArray_to_String message_ecrit))^"\n") in
+	let send_msg oc = let msg = ((author^"|"^(charArray_to_String message_ecrit))^"\n") in
 		begin
-			output_string file_out msg;
-			flush file_out;
-			carac_en_cours := 0;
-			Pyliste.empty message_ecrit;
-			(* FOR SHOWCASE ONLY *)
-			output_string showcase msg ;
-			flush showcase ;
+			Client.sendtoserver oc ("CHAT " ^ msg) ;
+			output_string file_out msg ;
+			flush file_out ;
+			carac_en_cours := 0 ;
+			Pyliste.empty message_ecrit ;
 		end
 
 	(* Reconstitue un message si celui-ci contenant le caractères '|' *)
@@ -77,8 +73,7 @@ struct
 	let clien_fun ic = 
 			while true do
 				try 
-					
-					let r = input_line ic in
+					let r = Client.get_text_msg (input_line ic) in
 					try
 						output_string memchat r;
 						flush memchat;
@@ -152,13 +147,13 @@ struct
 
 	(* Fonction principale *)
 	let skel f_init f_end f_key f_mouse =
-		f_init ();
+		let oc = f_init () in
 		let img = Graphics.make_image (Array.make_matrix (y_separation-2) largeur_fenetre Graphics.white) in
 		while true do
 			try
 				display_written img ;
 				let s = Graphics.wait_next_event [Graphics.Button_down; Graphics.Key_pressed] in
-				if s.Graphics.keypressed then f_key s.Graphics.key
+				if s.Graphics.keypressed then f_key s.Graphics.key oc
 				else if s.Graphics.button then f_mouse s.Graphics.mouse_x s.Graphics.mouse_y
 			with
 				_ -> f_end () ;
@@ -169,13 +164,15 @@ struct
 	(* Fonction d'initialisation *)
 	let f_init () =
 		begin
+			Client.ping () ;
 			ignore (reset_mem ()) ;
 			Graphics.set_text_size taille_txt ;
 			Graphics.set_color Graphics.black ;
-			let clientid = Thread.id (Thread.create (clien_fun) file_in) in
+			let ic, oc = Client.launch 1 "Alfred" "village:1" in
+			let clientid = Thread.id (Thread.create (clien_fun) ic) in
 			let img = Graphics.make_image (Array.make_matrix (hauteur_fenetre - y_separation - 1) largeur_fenetre Graphics.white) in
 			let displayid = Thread.id (Thread.create (display_msgs) img) in
-			pids := [|clientid; displayid; Unix.getpid ()|] ;
+			(pids := [|clientid; displayid; Unix.getpid ()|] ; oc) ;
 		end
 
 	(* Ferme les fichiers et la fenêtre *)
@@ -191,11 +188,11 @@ struct
 	let f_mouse x y = ()
 
 	(* Gère les touches sur lesquelles appuie le jouer *)
-	let f_key k = match k with
+	let f_key k oc = match k with
 		| '\027' -> raise End
 		| '\008' -> (Pyliste.remove message_ecrit (!carac_en_cours-1); carac_en_cours := max 0 (!carac_en_cours - 1))
 		| '\127' -> (Pyliste.remove message_ecrit (!carac_en_cours); if !carac_en_cours >= Pyliste.taille message_ecrit then carac_en_cours := max 0 (!carac_en_cours - 1))
-		| '\013' -> send_msg ()
+		| '\013' -> send_msg oc
 		| x when x = Fleche.left -> carac_en_cours := max 0 (!carac_en_cours - 1)
 		| x when x = Fleche.right -> carac_en_cours := min (message_ecrit.taille) (!carac_en_cours+1)
 		| x -> if !carac_en_cours < taille_max_message then

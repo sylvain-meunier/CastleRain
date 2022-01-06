@@ -3,6 +3,7 @@
 #load "unix.cma" ;;
 #require "graphics" ;;
 
+#use "../Modules/pyliste.ml" ;;
 #use "../Modules/castlerain.ml" ;;
 #use "./chat.ml" ;;
 
@@ -37,10 +38,12 @@ Graphics.moveto 200 200 ;
 Graphics.draw_string "Utilisez entree pour envoyer un message et les fleches pour deplacer le curseur" ;
 Graphics.moveto 200 150 ;
 Graphics.draw_string "Assurez-vous que la fenetre a bien le focus !" ;
+Graphics.moveto 200 100 ;
+Graphics.draw_string "Vous pouvez passer cette fenetre en plein ecran !" ;;
 Graphics.moveto 200 400 ;
 Graphics.draw_string "Bienvenue sur CastleRain !" ;;
 
-Unix.sleepf 1. ;;
+Unix.sleepf 0.2 ;;
 
 (* Lancement du mini-jeu *)
 

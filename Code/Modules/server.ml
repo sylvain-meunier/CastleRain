@@ -16,50 +16,37 @@ struct
          Printf.printf "Server Ready\n%!" ;
          while true do
             let (s, caller) = Unix.accept sock
-            in match Unix.fork() with
-                  | 0 -> (if Unix.fork() <> 0 then exit 0 ;
-                        let inchan = Unix.in_channel_of_descr s 
-                        and outchan = Unix.out_channel_of_descr s
-                        in server_fun inchan outchan ;
-                           close_in inchan ;
-                           close_out outchan ;
-                           Unix.close s ;
-                           exit 0)
-                  | id -> () ;
+            in if Unix.fork() = 0 then
+               let inchan = Unix.in_channel_of_descr s 
+               and outchan = Unix.out_channel_of_descr s
+               in (server_fun inchan outchan ;
+                  close_out outchan ;
+                  exit 0) ;
          done
       
    let main_server serv_fun sport =
       let mon_adresse = get_my_addr()
       in establish_server serv_fun  (Unix.ADDR_INET(mon_adresse, sport))
-
-   let get_text_msg ic = let msg = ref "" in
-      try
-         while true do
-            msg := !msg ^ (input_line ic) ;
-         done; !msg
-      with End_of_file -> !msg
    
    let rec pseudo_valide p plist = match plist with
    | [] -> true
    | a::b -> not (String.equal p a) && pseudo_valide p b
 
-   let rec shutdownclients inc out = match inc, out with
-   | [], [] -> exit 0
-   | a::l1, b::l2 -> (Unix.shutdown (Unix.descr_of_in_channel a) Unix.SHUTDOWN_ALL; Unix.shutdown (Unix.descr_of_out_channel b) Unix.SHUTDOWN_ALL; shutdownclients l1 l2)
-   | a::b, [] -> (Unix.shutdown (Unix.descr_of_in_channel a) Unix.SHUTDOWN_ALL; shutdownclients b [])
-   | [], a::b -> (Unix.shutdown (Unix.descr_of_out_channel a) Unix.SHUTDOWN_ALL; shutdownclients [] b)
+   let rec shutdownclients out = match out with
+   | [] -> exit 0
+   | a::q -> (close_out a; shutdownclients q)
 
    let answer oc text =
       begin
-         output_string oc text ;
+         output_string oc (text^"\n") ;
          flush oc ;
       end
 
    let rec answer_all outc text = match outc with
    | [] -> ()
-   | a::b -> (try answer a text with _ -> (); answer_all b text)
+   | a::b -> (try Printf.printf "ANSWERING : %s\n%!" text ; answer a text with _ -> (); answer_all b text)
 
-   let get_player_info pseudo_info room ic = pseudo_info ^ "ROOM " ^ room ^ (get_text_msg ic)
+   let get_player_info pseudo_info room ic = pseudo_info ^ "ROOM " ^ room
 
    let rec envoi_info_joueur info room outc rooms = match outc, rooms with
    | [], _ | _, [] -> ()
@@ -73,8 +60,9 @@ struct
    
    let manage_msg ic outc rooms = let command = input_line ic in
       begin
+         answer_all outc command ;
          if String.starts_with ~prefix:"PLAYER" command then let pseudo_info = input_line ic in let room = Scanf.sscanf (input_line ic) "ROOM %s" (fun x -> x) in envoi_info_joueur (get_player_info pseudo_info room ic) room outc rooms ;(* Envoi d'informations relatives à la position des joueurs en jeu *)
-         if String.starts_with ~prefix:"CHAT" command then answer_all outc (get_text_msg ic) ; (* Envoi d'un message dans le chat *)
+         if String.starts_with ~prefix:"CHAT" command then answer_all outc command ; (* Envoi d'un message dans le chat *)
          if String.starts_with ~prefix:"DEND" command then answer_all outc "DEND" ; (* Annonce que le dialogue a été lu *)
       end
    
@@ -82,8 +70,8 @@ struct
    | [] -> ()
    | a::l1 -> (let ic = Unix.in_channel_of_descr a in manage_msg ic outc rooms; manage_clients l1 outc rooms)
    
-   let get_pseudo ic = if String.starts_with ~prefix:"PSEUDO" (input_line ic) then input_line ic else "Alfred"
-   let get_room ic = if String.starts_with ~prefix:"ROOM" (input_line ic) then input_line ic else ""
+   let get_pseudo ic = let text = (input_line ic) in if String.starts_with ~prefix:"PSEUDO" text then Scanf.sscanf text "%s %s" (fun x y -> y) else "Alfred"
+   let get_room ic = let text = (input_line ic) in if String.starts_with ~prefix:"ROOM" text then Scanf.sscanf text "%s %s" (fun x y -> y) else ""
 
    let init_game clients current_nb =
       let inc, outc, pseud, rooms = !clients in
@@ -95,11 +83,10 @@ struct
                let msgs, _, _ = couplemsgs in
                manage_clients (msgs) outc rooms ;
             done
-         with _ -> shutdownclients inc outc ;
+         with _ -> (Printf.printf "SHUTTING DOWN !%!"; shutdownclients outc) ;
       end
 
    let game_server c nb sock =
-      Unix.listen sock 10;
       let (s, caller) = Unix.accept sock in
       let inchan = Unix.in_channel_of_descr s
       and outchan = Unix.out_channel_of_descr s in
@@ -107,6 +94,7 @@ struct
       let room = get_room inchan in
       let clients = ref ([inchan], [outchan], [pseudo], [room]) and current_nb = ref 1 in
       begin
+         answer outchan "NB 1" ;
          while !current_nb < nb do
             let (s, caller) = Unix.accept sock in
             let inchan = Unix.in_channel_of_descr s
@@ -120,10 +108,12 @@ struct
                current_nb := !current_nb + 1 ;
                let msg = "NB " ^ string_of_int !current_nb in
                clients := count_player current_nb (inchan::inc) (outchan::outc) ((!pseudo)::pseud) (room::rooms) msg [] [] [] [] ;
+               answer_all (outchan::outc) ("NB "^(string_of_int !current_nb)) ;
                if !current_nb = 0 then exit 0 ;
             end ;
          done ;
-         init_game clients current_nb;
+         Printf.printf "STARTING ON SUBSERVER : %d\n%!" c ;
+         init_game clients current_nb ;
       end
 
    let find_port oc nb =
@@ -131,21 +121,19 @@ struct
       begin
          let mon_adresse = get_my_addr () and cond = ref true in
          while !c < 400 && !cond do
-            Printf.printf "TRYING : %d ->" !c ;
             try
                let sockaddr = (Unix.ADDR_INET(mon_adresse, port + !c)) in
                let domain = Unix.domain_of_sockaddr sockaddr in
                let sock = Unix.socket domain Unix.SOCK_STREAM 0 in
                begin
                   Unix.bind sock sockaddr ;
-                  Printf.printf "SUCCESS\n%:" ;
                   cond := false ;
+                  Printf.printf "Subserveur launched on port : %d\n%!" !c ;
+                  Unix.listen sock 20;
                   answer oc ("LAUNCHED " ^ (string_of_int (port + !c))) ;
-                  match Unix.fork () with
-                  | 0 -> game_server !c nb sock
-                  | pid -> exit 0 ;
+                  if Unix.fork () = 0 then game_server !c nb sock ;
                end
-            with _ -> (c := !c + 1; Printf.printf "FAILURE\n%!";)
+            with _ -> c := !c + 1
          done ;
          answer oc "FAILURE 0" ;
       end
@@ -156,7 +144,8 @@ struct
          let command, nb = Scanf.sscanf s "%s %d" (fun x y -> x, y) in
             begin
                if String.equal command "LAUNCH" then find_port oc nb
-               else (Printf.printf "Invalid command : %s\n%!" s; answer oc "INVALID") ;
+               else if String.equal command "PING" then answer oc "PONG"
+               else (Printf.printf "Invalid command : %s\n%!" command; answer oc "INVALID") ;
             end
       end
 

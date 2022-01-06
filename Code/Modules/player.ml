@@ -47,7 +47,16 @@ struct
 			let nx, ny = Graphics.text_size player.name in
 			Graphics.moveto (player.x - nx/2 + namepadx) (player.y + namepady) ;
 			Graphics.draw_string player.name;
-			Unix.sleepf 0.01;
+			Unix.sleepf 0.001;
+		end
+
+	let display_player player =
+		begin
+			Graphics.draw_image imgs.(player.dir).(player.anim) player.x player.y;
+			Graphics.set_color Graphics.black;
+			let nx, ny = Graphics.text_size player.name in
+			Graphics.moveto (player.x - nx/2 + namepadx) (player.y + namepady) ;
+			Graphics.draw_string player.name;
 		end
 
 	(* Déplace le joueur *)
@@ -59,10 +68,10 @@ struct
 	(* Permet de gérer les déplacements du joueur *)
 	let deplacement com player =
 		begin
-			if com = Fleche.left then (if player.dir <> 0 then (player.dir <- 0; player.anim <- 1; move player 0 0) else if player.x  >= 5 then move player (-6) 0);
-			if com = Fleche.right then (if player.dir <> 1 then (player.dir <- 1; player.anim <- 1; move player 0 0) else if player.x + 40 <= Graphics.size_x () then move player 6 0);
-			if com = Fleche.up then (if player.dir <> 2 then (player.dir <- 2; player.anim <- 1; move player 0 0) else if player.y + 50 <= Graphics.size_y () then move player 0 6);
-			if com = Fleche.down then (if player.dir <> 3 then (player.dir <- 3; player.anim <- 1; move player 0 0) else if player.y  >= 5 then move player 0 (-6));
+			if com = Fleche.left then (if player.dir <> 0 then (player.dir <- 0; player.anim <- 1; move player 0 0) else if player.x  >= 5 then move player (-8) 0);
+			if com = Fleche.right then (if player.dir <> 1 then (player.dir <- 1; player.anim <- 1; move player 0 0) else if player.x + 40 <= Graphics.size_x () then move player 8 0);
+			if com = Fleche.up then (if player.dir <> 2 then (player.dir <- 2; player.anim <- 1; move player 0 0) else if player.y + 50 <= Graphics.size_y () then move player 0 8);
+			if com = Fleche.down then (if player.dir <> 3 then (player.dir <- 3; player.anim <- 1; move player 0 0) else if player.y  >= 5 then move player 0 (-8));
 		end
 	
 	(* Devrait gérer les interactions du joueur avec son environnement, son inventaire, ses items... *)
@@ -96,7 +105,7 @@ struct
 
 	(* Crée un cercle suffisament éloigné du joueur *)
 	let rec create_rond (player:player) = match 20 + Random.int (Graphics.size_x () - 40), 20 + Random.int (Graphics.size_y () - 40) with
-		| x, y when distance_2 x y player.x player.y >= 20 ->
+		| x, y when distance_2 x y player.x player.y >= 2500 ->
 			let point = if Random.int 5 = 1 then 2 else 1 in
 			let color = if point = 1 then Graphics.cyan else Graphics.blue in
 			begin
@@ -110,13 +119,17 @@ struct
 	let rond_func rond (player:player) = distance_2 player.x player.y (rond.x-radius) (rond.y-radius) <= 1400
 
 	(* Pas de progression des ennemis (accélération) *)
-	let pas = 8.
+	let pas = 0.05
+
+	let inertie = 0.82
+
+	let vmax = 1.2
 
 	type foe = {mutable x:float; mutable y:float; mutable dx:float; mutable dy:float; mutable lifetime : int}
 
 	(* Crée un ennemi suffisament éloigné du joueur *)
 	let rec create_foe (player:player) = match 20 + Random.int (Graphics.size_x () - 40), 20 + Random.int (Graphics.size_y () - 40) with
-		| x, y when distance_2 x y player.x player.y >= 80 -> {x=float_of_int x; y=float_of_int y; dx=0.; dy=0.; lifetime = 1500 + (Random.int 2000)}
+		| x, y when distance_2 x y player.x player.y >= 25000 -> {x=float_of_int x; y=float_of_int y; dx=0.; dy=0.; lifetime = 3000 + (Random.int 2000)}
 		| _ -> create_foe player
 
 	(* Met à jour les liste des ronds en déterminant si le joueur en touche un. Peut alors faire apparaître un ennemi ainsi qu'un autre rond et met à jour le score du joueur *)
@@ -134,11 +147,15 @@ struct
 				Graphics.fill_rect (int_of_float foe.x) (int_of_float foe.y) 20 20 ;
 				foe.x <- foe.x +. foe.dx ;
 				foe.y <- foe.y +. foe.dy ;
-				foe.dx <- foe.dx +. (pas *. ((float_of_int player.x) -. foe.x) /. (float_of_int dist)) ;
-				foe.dy <- foe.dy +. (pas *. ((float_of_int player.y) -. foe.y) /. (float_of_int dist)) ;
+				let ndx = foe.dx*.inertie +. pas *. ((float_of_int player.x) -. foe.x) /. (sqrt (float_of_int dist)) and ndy = foe.dy*.inertie +. pas *. ((float_of_int player.y) -. foe.y) /. (sqrt (float_of_int dist)) in
+				if ndx*.ndx +. ndy*.ndy < vmax then
+					begin
+						foe.dx <- ndx ;
+						foe.dy <- ndy ;
+					end ;
 				Graphics.set_color Graphics.red ;
 				Graphics.fill_rect (int_of_float foe.x) (int_of_float foe.y) 20 20 ;
-				if dist <= 40 then true, true
+				if dist <= 600 then true, true
 				else false, false
 			end
 			
@@ -170,31 +187,35 @@ struct
 					while true do
 						(* Attends que le joueur appuie sur une touche *)
 						while not (Graphics.key_pressed ()) do
-							Graphics.synchronize ();
 							(* Met à jour la liste des ennemis, si le joueur est touché, reset le jeu et met à jour le meilleur score *)
 							let foe, alive = manage_foes !foes [] j in (if alive then foes := foe else (foes := []; maxpoints := max !points !maxpoints; let f = open_out "./game.score" in (output_string f (string_of_int !maxpoints); flush f; close_out f); points := 0; Graphics.clear_graph (); ronds:=[create_rond j; create_rond j; create_rond j]; set_pos j 20 20)) ;
-							Unix.sleepf 0.02;
-						done;
+							
+							(* Met à jour l'affichage du score *)
+							Graphics.moveto 50 450 ;
+							Graphics.set_color Graphics.white ;
+							let dx, dy = Graphics.text_size "Points : 1000" in Graphics.fill_rect 50 450 dx dy ;
+							Graphics.set_color Graphics.black ;
+							Graphics.draw_string ("Points : "^(string_of_int !points)) ;
+						
+							let ev = Graphics.wait_next_event [Graphics.Poll] in let c = ev.key in
+							if c = Fleche.down || c = Fleche.up || c = Fleche.left || c = Fleche.right then Printf.printf "%c\n" c ;
+
+							Graphics.moveto 450 450 ;
+							Graphics.set_color Graphics.white ;
+							let dx, dy = Graphics.text_size "Meilleur score : 1000" in Graphics.fill_rect 450 450 dx dy ;
+							Graphics.set_color Graphics.black ;
+							Graphics.draw_string ("Meilleur score : "^(string_of_int !maxpoints)) ;
+							Graphics.synchronize () ;
+							Unix.sleepf 0.001;
+						done; 
 				
 						(* Met à jour les liste des ronds *)
 						ronds := manage_ronds !ronds [] points j foes ;
 
-						(* Met à jour l'affichage du score *)
-						Graphics.moveto 50 450 ;
-						Graphics.set_color Graphics.white ;
-						let dx, dy = Graphics.text_size "Points : 1000" in Graphics.fill_rect 50 450 dx dy ;
-						Graphics.set_color Graphics.black ;
-						Graphics.draw_string ("Points : "^(string_of_int !points)) ;
-						
-						Graphics.moveto 450 450 ;
-						Graphics.set_color Graphics.white ;
-						let dx, dy = Graphics.text_size "Meilleur score : 1000" in Graphics.fill_rect 450 450 dx dy ;
-						Graphics.set_color Graphics.black ;
-						Graphics.draw_string ("Meilleur score : "^(string_of_int !maxpoints)) ;
-
 						(* Déplace le joueur *)
-						com := (Graphics.wait_next_event [Graphics.Key_pressed]).key;
+						com := Graphics.read_key ();
 						manage !com j;
+
 					done
 				with _ -> ()
 		end
