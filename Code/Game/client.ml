@@ -7,11 +7,12 @@
 
 (* Ping au lancement *)
 
-Client.ping () ;;
+Client.ping 0 ;;
 
-Client.launch 1 "AlfredAl" "village:1" ;;
+let i = 1 in
+if i = 0 then (Client.launch 1 "AlfredAl" "village:1"; ()) else let ic, oc = Client.join i "Alfred" "village:2" in (Unix.sleepf 1.; Client.sendtoserver oc "Coucou", 0) ;;
 
-(* Client.join 1 "Alfred" "village:2" *)
+Unix.sleepf 10. ;;
 
 (* Lancer une partie -> demander : nb de joueur, pseudo (sans espace, String.trim) *)
 (* Demander le nombre de joueur *)

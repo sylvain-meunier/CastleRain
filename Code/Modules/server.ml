@@ -1,6 +1,8 @@
 #use "topfind" ;;
 
 #load "unix.cma" ;;
+#directory "+threads" ;;
+#load "threads.cma" ;;
 
 module Server =
 struct
@@ -33,7 +35,7 @@ struct
    | a::b -> not (String.equal p a) && pseudo_valide p b
 
    let rec shutdownclients out = match out with
-   | [] -> exit 0
+   | [] -> ()
    | a::q -> (close_out a; shutdownclients q)
 
    let answer oc text =
@@ -42,9 +44,9 @@ struct
          flush oc ;
       end
 
-   let rec answer_all outc text = match outc with
-   | [] -> ()
-   | a::b -> (try Printf.printf "ANSWERING : %s\n%!" text ; answer a text with _ -> (); answer_all b text)
+   let rec answer_all outc text = match outc, text with
+   | [], _ | _, "" -> ()
+   | a::b, _ -> (Printf.printf "ANSWERING : %s\n%!" text ; answer a text; answer_all b text)
 
    let get_player_info pseudo_info room ic = pseudo_info ^ "ROOM " ^ room
 
@@ -58,7 +60,7 @@ struct
       try (answer b msg; count_player current_nb l1 l2 l3 l4 msg (a::mem1) (b::mem2) (c::mem3) (d::mem4))
       with _ -> (current_nb := !current_nb - 1 ; count_player current_nb l1 l2 l3 l4 msg mem1 mem2 mem3 mem4)
    
-   let manage_msg ic outc rooms = let command = input_line ic in
+   let manage_msg_text command ic outc rooms =
       begin
          answer_all outc command ;
          if String.starts_with ~prefix:"PLAYER" command then let pseudo_info = input_line ic in let room = Scanf.sscanf (input_line ic) "ROOM %s" (fun x -> x) in envoi_info_joueur (get_player_info pseudo_info room ic) room outc rooms ;(* Envoi d'informations relatives à la position des joueurs en jeu *)
@@ -66,26 +68,114 @@ struct
          if String.starts_with ~prefix:"DEND" command then answer_all outc "DEND" ; (* Annonce que le dialogue a été lu *)
       end
    
+   let manage_msg ic outc rooms =
+      let command = input_line ic in
+      manage_msg_text command ic outc rooms
+   
    let rec manage_clients msgs outc rooms = match msgs with
    | [] -> ()
-   | a::l1 -> (let ic = Unix.in_channel_of_descr a in manage_msg ic outc rooms; manage_clients l1 outc rooms)
+   | (msg, ic)::l1 -> (manage_msg_text msg ic outc rooms; manage_clients l1 outc rooms)
+
+   exception Pong
    
-   let get_pseudo ic = let text = (input_line ic) in if String.starts_with ~prefix:"PSEUDO" text then Scanf.sscanf text "%s %s" (fun x y -> y) else "Alfred"
+   let get_pseudo ic = let text = (input_line ic) in if String.starts_with ~prefix:"PSEUDO" text then Scanf.sscanf text "%s %s" (fun x y -> y) else if String.starts_with ~prefix:"PING" text then raise Pong else "Alfred"
    let get_room ic = let text = (input_line ic) in if String.starts_with ~prefix:"ROOM" text then Scanf.sscanf text "%s %s" (fun x y -> y) else ""
 
-   let init_game clients current_nb =
-      let inc, outc, pseud, rooms = !clients in
+   (* Attends qu'un nouveau joueur se connecte et envoie le nombre de joueurs connectés à tous les clients *)
+   let accept_new_player sock current_nb clients started newplayer current_chg =
+      let (s, caller) = Unix.accept sock in
+      let inchan = Unix.in_channel_of_descr s
+      and outchan = Unix.out_channel_of_descr s in
+      let pseudo = ref (try get_pseudo inchan with Pong -> (Printf.printf "PONG !\n%!"; answer outchan "PONG"; raise Pong)) in
+      let room = get_room inchan and inc, outc, pseud, rooms = !clients in
+      begin
+         while not (pseudo_valide !pseudo pseud) do
+            pseudo := !pseudo ^ "_" ;
+         done ;
+         (* Stoppe les modifications sur la référence clients *)
+         newplayer := true ;
+         (* Attends que les modifications cessent *)
+         while !current_chg do
+            Unix.sleepf 0.0001 ;
+         done ;
+         current_nb := !current_nb + 1 ;
+         let msg = "NB " ^ string_of_int !current_nb in
+         clients := count_player current_nb (inchan::inc) (outchan::outc) ((!pseudo)::pseud) (room::rooms) msg [] [] [] [] ;
+         answer outchan "START 0" ;
+         (* Réautorise les modifications *)
+         newplayer := false ;
+         if !current_nb = 0 then exit 0 ;
+      end
+
+   (* Permet à un client de se connecter à un sous-serveur *)
+   let let_new_players_in args =
+      let sock, current_nb, clients, newplayer, current_chg = args in
+      while true do
+         Printf.printf "LISTENING\n%!" ;
+         try
+            accept_new_player sock current_nb clients true newplayer current_chg
+         with _ -> () ;
+      done
+   
+   let killthread id = Unix.kill id Sys.sigkill
+
+   exception Noplayer
+
+   (* Renvoie la liste des messages reçus par le serveur *)
+   let rec convert_to_descr_select current_nb clients incs outcs pseudos rooms sortie memin memout mempseud memroom = match incs, outcs, pseudos, rooms with
+   | [], _, _, _ | _, [], _, _ | _, _, [], _ | _, _, _, [] -> (clients := memin, memout, mempseud, memroom; sortie)
+   | inc::tail, outc::l2, pseud::l3, room::l4 ->
+      try
+         let incdesc = Unix.descr_of_in_channel inc in
+         let msg, _, _ = Unix.select [incdesc] [] [] 0.001 in
+            match msg with
+            | [] -> convert_to_descr_select current_nb clients tail l2 l3 l4  sortie (inc::memin) (outc::memout) (pseud::mempseud) (room::memroom)
+            | _ ->
+               let r = input_line inc in
+               convert_to_descr_select current_nb clients tail l2 l3 l4 ((r, inc)::sortie) (inc::memin) (outc::memout) (pseud::mempseud) (room::memroom)
+      with _ ->
+         (current_nb := !current_nb - 1 ;
+         Printf.printf "NB_PLAYER : %d\n%!" !current_nb ;
+         answer_all outcs "RM 0" ;
+         convert_to_descr_select current_nb clients tail l2 l3 l4 sortie memin memout mempseud memroom)
+
+   (* Initialise le sous-serveur *)
+   let init_game sock clients current_nb =
+      let inc, outc, pseud, rooms = !clients and newplayer = ref false and current_chg = ref false in
+      let thread = Thread.id (Thread.create (let_new_players_in) (sock, current_nb, clients, newplayer, current_chg)) in
       begin
          answer_all outc "START 0" ;
          try
-            while true do
-               let couplemsgs = Unix.select (List.map (Unix.descr_of_in_channel) inc) [] [] 1. in
-               let msgs, _, _ = couplemsgs in
-               manage_clients (msgs) outc rooms ;
-            done
-         with _ -> (Printf.printf "SHUTTING DOWN !%!"; shutdownclients outc) ;
+            while !current_nb > 0 do
+               if !newplayer then ()
+               else
+                  begin
+                     current_chg := true ;
+                     let inc, outc, pseud, rooms = !clients in
+                     let msgs = convert_to_descr_select current_nb clients inc outc pseud rooms [] [] [] [] [] in
+                     manage_clients (msgs) outc rooms ;
+                     current_chg := false ;
+                  end ;
+            done ;
+            Printf.printf "No player detected\n%!"  ;
+            Printf.printf "SHUTTING DOWN !\n%!" ;
+            shutdownclients outc ;
+            try 
+               killthread thread
+            with  _ -> () ;
+            exit 0 ;
+         with
+            | Unix.Unix_error (a, b, c) -> Printf.printf "UNIX_ERREUR : %s %s%!" b c
+            | Sys_error s -> Printf.printf "SYS_ERREUR : %s\n%!" s ;
+         Printf.printf "SHUTTING DOWN !\n%!" ;
+         shutdownclients outc ;
+         try 
+            killthread thread
+         with  _ -> () ;
+         exit 0 ;
       end
 
+   (* Fonction principale du sous-serveur *)
    let game_server c nb sock =
       let (s, caller) = Unix.accept sock in
       let inchan = Unix.in_channel_of_descr s
@@ -95,25 +185,13 @@ struct
       let clients = ref ([inchan], [outchan], [pseudo], [room]) and current_nb = ref 1 in
       begin
          answer outchan "NB 1" ;
+         (* Dummy arg in this case *)
+         let np = ref true in
          while !current_nb < nb do
-            let (s, caller) = Unix.accept sock in
-            let inchan = Unix.in_channel_of_descr s
-            and outchan = Unix.out_channel_of_descr s in
-            let pseudo = ref (get_pseudo inchan) in
-            let room = get_room inchan and inc, outc, pseud, rooms = !clients in
-            begin
-               while not (pseudo_valide !pseudo pseud) do
-                  pseudo := !pseudo ^ "_" ;
-               done ;
-               current_nb := !current_nb + 1 ;
-               let msg = "NB " ^ string_of_int !current_nb in
-               clients := count_player current_nb (inchan::inc) (outchan::outc) ((!pseudo)::pseud) (room::rooms) msg [] [] [] [] ;
-               answer_all (outchan::outc) ("NB "^(string_of_int !current_nb)) ;
-               if !current_nb = 0 then exit 0 ;
-            end ;
+            accept_new_player sock current_nb clients false np np ;
          done ;
          Printf.printf "STARTING ON SUBSERVER : %d\n%!" c ;
-         init_game clients current_nb ;
+         init_game sock clients current_nb ;
       end
 
    let find_port oc nb =
@@ -128,14 +206,14 @@ struct
                begin
                   Unix.bind sock sockaddr ;
                   cond := false ;
-                  Printf.printf "Subserveur launched on port : %d\n%!" !c ;
+                  Printf.printf "Subserver waiting on port : %d\n%!" !c ;
                   Unix.listen sock 20;
                   answer oc ("LAUNCHED " ^ (string_of_int (port + !c))) ;
                   if Unix.fork () = 0 then game_server !c nb sock ;
                end
             with _ -> c := !c + 1
          done ;
-         answer oc "FAILURE 0" ;
+         if !cond then answer oc "FAILURE 0" ;
       end
 
    let answer_back ic oc =

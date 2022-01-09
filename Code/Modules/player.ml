@@ -118,18 +118,11 @@ struct
 	(* Renvoie si un rond est ou non atteint par le joueur *)
 	let rond_func rond (player:player) = distance_2 player.x player.y (rond.x-radius) (rond.y-radius) <= 1400
 
-	(* Pas de progression des ennemis (accélération) *)
-	let pas = 0.05
-
-	let inertie = 0.82
-
-	let vmax = 1.2
-
-	type foe = {mutable x:float; mutable y:float; mutable dx:float; mutable dy:float; mutable lifetime : int}
+	type foe = {mutable x:float; mutable y:float; mutable dx:float; mutable dy:float; mutable lifetime : int; caracteristique : float*float*float}
 
 	(* Crée un ennemi suffisament éloigné du joueur *)
 	let rec create_foe (player:player) = match 20 + Random.int (Graphics.size_x () - 40), 20 + Random.int (Graphics.size_y () - 40) with
-		| x, y when distance_2 x y player.x player.y >= 25000 -> {x=float_of_int x; y=float_of_int y; dx=0.; dy=0.; lifetime = 3000 + (Random.int 2000)}
+		| x, y when distance_2 x y player.x player.y >= 25000 -> {x=float_of_int x; y=float_of_int y; dx=0.; dy=0.; lifetime = 3000 + (Random.int 2000); caracteristique = if Random.int 2 = 0 then (0.0008, 1., 10.) else if Random.int 3 <> 0 then (0.0001, 1., 10.) else (0.05, 0.8, 0.6)}
 		| _ -> create_foe player
 
 	(* Met à jour les liste des ronds en déterminant si le joueur en touche un. Peut alors faire apparaître un ennemi ainsi qu'un autre rond et met à jour le score du joueur *)
@@ -141,6 +134,7 @@ struct
 	let foe_func foe (player:player) =
 		if foe.lifetime <= 0 then (Graphics.set_color Graphics.white; Graphics.fill_rect (int_of_float foe.x) (int_of_float foe.y) 20 20; (true, false))
 		else let dist = distance_2 (int_of_float foe.x) (int_of_float foe.y) player.x player.y in
+			let pas, inertie, vmax = foe.caracteristique in
 			begin
 				foe.lifetime <- foe.lifetime - 1 ;
 				Graphics.set_color Graphics.white ;

@@ -1,13 +1,13 @@
 Interface :
 | show_msg_on_screen : author:str text:str -> unit : écrit un texte sur la fenêtre
-| clien_fun : in_channel -> unit : récupère les éventuels messages envoyés par le serveur
+| client_fun : in_channel -> unit : récupère les éventuels messages envoyés par le serveur
 | send_msg : unit -> unit : envoie le message entré au serveur, et l'affiche au niveau du client
 | f_key : char -> unit : met à jour le tableau qui correspond à la chaine de caractère qui représente le message du joueur en fonction de la touche qui a été enfoncée
 | display_written : msg:char array -> unit : met à jour l'affichage du message qu'est en train d'écrire le joueur
 
 Fonctionnement :
 Le programme se compose de 2 threads
--   Dès qu'un message est reçu, il est lu par la fonction clien_fun, puis le texte est décodé et ajouté dans une liste partagée par les deux threads.
+-   Dès qu'un message est reçu, il est lu par la fonction client_fun, puis le texte est décodé et ajouté dans une liste partagée par les deux threads.
 -   La fonction display_msgs affiche les messages contenus dans la liste à l'écran en permanence, en la vidant si jamais aucun message ne peut plus être affiché par manque de place.
 -   La fonction f_key permet au client courant d'écrire des messages, en mettant à jour un tableau de caractère (à taille maximale fixée)
     Cette mise à jour est indiquée au joueur par l'action de la fonction display_written.

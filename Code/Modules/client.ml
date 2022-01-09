@@ -42,15 +42,17 @@ struct
             Printf.printf "OKAY : %s%!" com ;
             if not (String.equal com "LAUNCHED") then raise SERVER_ERROR ;
             close_out oc ;
-            Printf.printf "PORT :  %d\n%!" port ;
-            connect_to_server port ;
+            Printf.printf " ON PORT :  %d\n%!" port ;
+            connect_to_server port, port ;
           end
       end
     with 
       | Exit -> exit 0
       | exn -> (close_out oc ; raise exn)
     
-  let get_text_msg msg = String.sub msg 5 (String.length msg - 5)
+  exception Notmsg
+    
+  let get_text_msg msg = if String.equal "CHAT " (String.sub msg 0 5) then String.sub msg 5 (String.length msg - 5) else raise Notmsg
     
   (* Attends que le serveur démarre la partie *)
   let wait_players ic oc pseudo room =
@@ -71,18 +73,20 @@ struct
     end
   
   let join dport pseudo room =
-    let ic, oc = connect_to_server (serverport + dport) in wait_players ic oc pseudo room
+    let ic, oc = connect_to_server (serverport + dport) in wait_players ic oc pseudo room, (serverport + dport)
  
   (* Renvoie les in/out channel connectés au bon serveur *)
   let launch nb_player pseudo room =
     let ic1, oc1 = connect_to_server serverport in
-    let ic, oc = ask_launch ic1 oc1 nb_player in wait_players ic oc pseudo room
+    let (ic, oc), port = ask_launch ic1 oc1 nb_player in wait_players ic oc pseudo room, port
 
   (* Teste si le serveur est accessible *)
-  let ping () =
-    let ic, oc = connect_to_server serverport in
-    let _ = sendtoserver oc "PING 0" in
-    String.equal (input_line ic) "PONG"
+  let ping port =
+    try
+      let ic, oc = connect_to_server (serverport + port) in
+      let _ = sendtoserver oc "PING 0" in
+      String.equal (input_line ic) "PONG"
+    with _ -> false ;
 
  end ;;
 

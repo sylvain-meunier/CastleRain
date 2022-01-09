@@ -70,17 +70,19 @@ struct
 		aux liste msg
 
 	(* Affichage les messages lus dans le canal d'entrée *)
-	let clien_fun ic = 
+	let client_fun ic = 
 			while true do
 				try 
-					let r = Client.get_text_msg (input_line ic) in
+					let msg = (input_line ic) in
+					let r = (if String.starts_with ~prefix:"NB" msg then "System|Un nouveau joueur a rejoint le chat" else if String.starts_with ~prefix:"RM" msg then "System|Un joueur est parti du chat" else Client.get_text_msg msg) in
 					try
 						output_string memchat r;
 						flush memchat;
 						let a::m::r = String.split_on_char '|' r in liste_message := ({author = a; message = full_msg m r} :: !liste_message);
 					with _ -> Printf.printf "Erreur : %s %!" r
 
-				with End_of_file -> () ;
+				with
+				| End_of_file -> () ;
 				
 				Unix.sleepf 0.3 ;
 			done
@@ -94,7 +96,7 @@ struct
 	(* Affiche un message caractère par caractère *)
 	let draw_by_char word = 
 		for i = 0 to (String.length word - 1) do
-			if (largeur_fenetre - (Graphics.current_x())) <= 20 then retour_ligne word ;
+			if (largeur_fenetre - (Graphics.current_x())) <= x_min_txt then retour_ligne word ;
 			Graphics.draw_char word.[i];
 		done
 
@@ -130,7 +132,7 @@ struct
 					| x::q ->
 						begin
 							show_msg [x.author^": "^x.message] [] ;
-							if q <> [] then let dx, dy = Graphics.text_size ((List.hd(q)).message) in Graphics.rmoveto (x_min_txt - (Graphics.current_x ())) ( -dy - y_min_txt);
+							if q <> [] then let dx, dy = Graphics.text_size ((List.hd(q)).message) in Graphics.rmoveto (x_min_txt - (Graphics.current_x ())) (- int_of_float (float_of_int(dy)*. 1.5));
 							aux q;
 						end
 				in aux (List.rev !liste_message) ;
@@ -164,12 +166,27 @@ struct
 	(* Fonction d'initialisation *)
 	let f_init () =
 		begin
-			Client.ping () ;
 			ignore (reset_mem ()) ;
 			Graphics.set_text_size taille_txt ;
 			Graphics.set_color Graphics.black ;
-			let ic, oc = Client.launch 1 "Alfred" "village:1" in
-			let clientid = Thread.id (Thread.create (clien_fun) ic) in
+			Graphics.moveto x_min_txt (hauteur_fenetre - y_min_txt) ;
+			if not (Client.ping 0) then (show_msg ["System : Unable to reach server, please try again later..."] []; retour_ligne "S";  retour_ligne "S";  show_msg ["System : Closing in 10 seconds"] []; raise Client.SERVER_ERROR)
+			else let c = ref 1 in
+			let (ic, oc), servnumb =
+					try
+
+						(* Cherche sous-serveur déjà ouvert *)
+						while not (Client.ping !c) && !c <= 10 do
+							Printf.printf "PING PONG\n%!" ;
+							c := !c + 1 ;
+						done ;
+						Client.join !c "Alfred" "village:2" ;
+
+					(* Sinon, en crée un nouveau *)
+					with _ -> Client.launch 1 "Alfred" "village:1"
+			in
+			let _ = liste_message := {author = "System"; message = "Connected to subserver : "^(string_of_int servnumb)}::(!liste_message) in
+			let clientid = Thread.id (Thread.create (client_fun) ic) in
 			let img = Graphics.make_image (Array.make_matrix (hauteur_fenetre - y_separation - 1) largeur_fenetre Graphics.white) in
 			let displayid = Thread.id (Thread.create (display_msgs) img) in
 			(pids := [|clientid; displayid; Unix.getpid ()|] ; oc) ;
@@ -202,7 +219,10 @@ struct
 			end
 
 	(* Lance les fonctions précédentes *)
-	let start_chat () = skel f_init f_end f_key f_mouse
+	let start_chat () =
+		try
+			skel f_init f_end f_key f_mouse ;
+		with _ -> Unix.sleepf 10.; exit 0
 
 	(* Crée la fenêtre et lance le chat *)
 	let func () =
