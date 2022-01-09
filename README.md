@@ -22,11 +22,9 @@ Le reste de l'initialisation est contenue dans le module Init du fichier castleR
 
 Remarque : Cette initialisation est effectuée automatiquement au lancement du jeu.
 
-Remarque : Ce projet est loin d'être achevé, cependant les idées générales sont explicités ci-après et les fonctions principales ont été codées.
+Remarque : Ce projet est loin d'être achevé, cependant les idées générales sont explicitées ci-après et les fonctions principales ont été codées.
 
-Remarque : Les fichiers de code contiennent peu (ou pas) de commentaire car cela risquait de rendre le code moins lisible (d'un point de vue subjectif)
-
-[Voir la partie Lancement et Test](#Lancement)
+[Aller à la partie Lancement et Test](#Lancement)
 
 
 # Fonctionnement Principal
