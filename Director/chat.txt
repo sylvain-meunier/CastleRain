@@ -11,10 +11,11 @@ Le programme se compose de 2 threads
 -   La fonction display_msgs affiche les messages contenus dans la liste à l'écran en permanence, en la vidant si jamais aucun message ne peut plus être affiché par manque de place.
 -   La fonction f_key permet au client courant d'écrire des messages, en mettant à jour un tableau de caractère (à taille maximale fixée)
     Cette mise à jour est indiquée au joueur par l'action de la fonction display_written.
-    Si ce dernier appuie sur la touche correspondant à l'envoi d'un message, la fonction send_msg est appelée, qui envoie le message à tous les clients.
-    Le message est alors reçu et traité par la première thread.
+    Si ce dernier appuie sur la touche correspondant à l'envoi d'un message (entrée), la fonction send_msg est appelée, qui envoie le message au serveur. Ce dernier transmet alors le message à tous les clients connectés.
+    Le message est ainsi reçu et traité par la première thread.
 
 Remarque : Bien que le curseur ne s'affiche pas, il est possible de se déplacer dans le texte en utilisant les flèches de gauche et de droite.
+Il est bien sûr possible d'effacer un caractère (notamment avec la touche SUPPR).
 
 Améliorations possibles :
 - retenir les messages reçus dans un fichier -> memchat.out

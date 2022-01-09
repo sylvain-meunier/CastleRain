@@ -1,3 +1,6 @@
+(* Ce module permet d'afficher des sprites à l'écran.
+Il pourrait cependant être optimisé au niveau de l'affichage avec davantage d'informations sur la façon dont Graphics le gère *)
+
 #use  "topfind" ;;
 #require "graphics";;
 
@@ -106,6 +109,7 @@ struct
 	(* Permet de se placer à un frame précise de l'animation *)
 	let set_animation token ind = token.anim <- ind
 
+	(* Met à jour les coordonnées d'un token, avec ou sans animation *)
 	let move token x y animate =
 		begin
 			token.vx <- x;

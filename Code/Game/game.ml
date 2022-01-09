@@ -13,6 +13,7 @@ let launch_game () =
 
 Init.init () ;;
 
+(* Contient la liste des sous-processus initialisés *)
 let pids = ref [||] ;;
 
 (* Lance les fonctions correspondants aux différentes parties du programme *)

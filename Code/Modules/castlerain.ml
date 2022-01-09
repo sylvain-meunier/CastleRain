@@ -2,14 +2,18 @@
 #load "unix.cma" ;;
 #require "graphics" ;;
 
+(* Module d'initialisation *)
 module Init =
 struct
+	(* Taille de l'écran *)
 	let screen_x, screen_y = let screen = Unix.open_process_in "xrandr" in Scanf.sscanf (input_line screen) "%s %s %s %s %s %s current %d x %d" (fun s1 s2 s3 s4 s5 s6 y z -> y, z)
 
+	(* Variables de tailles des fenêtres *)
 	let launch_x = "600" and launch_y = "450"
 	let game_x = "700" and game_y = "500"
 	let chat_x = "300" and chat_y = game_y
 
+	(* Variables de nom des fenêtres *)
 	let launchername = "[CastleRain - Launcher]"
 	and gamename = "[CastleRain - Game]"
 	and chatname = "[CastleRain - Chat]"
@@ -33,15 +37,15 @@ struct
 	(* Permet de détecter l'appui sur les flèches avec Graphics (qui ignore normalement ces évènements) *)
 	let allow_arrow_press () =
 		begin
-		ignore (Unix.system "xmodmap -pke > ./touchmem.xmm");
-		ignore (Unix.system "xmodmap -e \"keysym  Left = 0xf0\" ");
-		ignore (Unix.system "xmodmap -e \"keysym  Right = 0xf1\"");
-		ignore (Unix.system "xmodmap -e \"keysym  Up = 0xf2\"");
-		ignore (Unix.system "xmodmap -e \"keysym  Down = 0xf3\"");
+		(* Retient les informations dans un fichier temporaire *)
+		ignore (Unix.system "xmodmap -pke > ./temp.xmm");
+		match (Unix.system "xmodmap -e \"keysym  Left = 0xf0\" "), (Unix.system "xmodmap -e \"keysym  Right = 0xf1\""), (Unix.system "xmodmap -e \"keysym  Up = 0xf2\""), (Unix.system "xmodmap -e \"keysym  Down = 0xf3\"") with
+		| Unix.WEXITED 0, Unix.WEXITED 0, Unix.WEXITED 0, Unix.WEXITED 0 -> ignore (Unix.system "cat ./temp.xmm >./touchmem.xmm")
+		| _, _, _, _ -> (Printf.printf " - Error on arrow detection\n%!") ;
 		end
 	
 	(* Réinitialise les fichiers *)
-	let empty_file () = ignore (Unix.system ">chat.tsin >game.tsin >chat.tsout >game.tsout")
+	let empty_file () = ignore (Unix.system ">chat.tsin >game.tsin >chat.tsout >game.tsout >temp.xmm")
 
 	(* Raccourci pour les fonctions précédentes *)
 	let init () =
@@ -51,13 +55,14 @@ struct
 		end
 end ;;
 
+(* Module facilitant la détection de l'appui sur les touches *)
 module Fleche =
 struct
-	(* Facilite la détection de l'appui sur les touches *)
 	let left = Char.chr 240 and right = Char.chr 241 and up = Char.chr 242 and down = Char.chr 243
 	let left_maj = Char.uppercase_ascii left and rigth_maj = Char.uppercase_ascii right and down_maj = Char.uppercase_ascii down and up_maj = Char.uppercase_ascii up
 end ;;
 
+(* Module de fermeture *)
 module Close =
 struct
 	(* Tue les processus contenus dans la liste et met fin à l'exécution *)

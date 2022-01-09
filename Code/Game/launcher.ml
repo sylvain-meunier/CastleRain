@@ -8,6 +8,17 @@
 #use "../Modules/castlerain.ml" ;;
 #use "../Modules/sprite.ml" ;;
 
+(* ============================================================== *)
+
+(* Interface prévue du launcher
+
+Lancer une partie -> soit nouvelle (crée les fichiers) soit ancienne (charge)
+Rejoindre une partie -> soit nouvelle (crée), soit ancienne (charge)
+Tutoriel -> les tutos claires et précis -> crédits
+Quitter le jeu *)
+
+(* ============================================================== *)
+
 exception Game ;;
 
 (* Affichage de la fenêtre *)
@@ -57,8 +68,10 @@ let show_main_button () = let dy = 3 in
       Unix.sleepf 0.05 ;
     done ;
   end ;;
-    
+
+(* Ferme la fenêtre lors de l'appui sur le bouton adéquat *)
 let close_window () = Graphics.close_graph () in Sprite.set_function bout_leave close_window ;;
+(* Devrait lancer le jeu (en pratique, fait crasher l'application) *)
 let game_start (a:unit):unit = raise Game in Sprite.set_function bout_launch game_start ;;
 
 Sprite.center_x logo ;;
@@ -77,7 +90,7 @@ for i=0 to 105 do
   Sprite.animation chateau true ;
 
   if i <= 38 then Sprite.rmove chateau 0 5 false ;
-  if i <= 105 then Sprite.rmove logo 0 (-2) false ;
+  if i <= 105 then Sprite.rmove logo 0 (-2) (i mod 12 = 0)  ;
   if i <= 100 then (Sprite.rmove alfred 0 (-2) false; Sprite.animation alfred (i mod 3 = 0)) ;
   if i = 100 then Sprite.animation alfred true ;
   if i = 12 then ignore (Thread.create (show_main_button) ()) ;
@@ -110,10 +123,11 @@ try
           end
         else () ;
 
+      (* Gère les animations des images de fond *)
       Sprite.animation bg (i mod 3 = 0) ;
       Sprite.animation chateau true ;
 
-      Sprite.move logo logo_x (logo_y + anim_logo i) (i mod 3 <> 0) ;
+      Sprite.move logo logo_x (logo_y + anim_logo i) (true) ;
       Sprite.update_one logo ;
 
       Sprite.show_all () ;
@@ -125,8 +139,12 @@ with
   | Game -> ()
   | _ -> exit 0 ;;
 
+(* ===================================================================== *)
+
 (*/!\ Le code qui suit ne marche pas car Graphics ne tolère pas qu'on ferme une fenêtre pour en ouvrir une autre, et car faire un fork sur une fenêtre déjà ouverte semble poser de sérieux problèmes aux X serveur *)
-(* Pour voir ce qui aurait dû s'afficher, il faudra lancer le fichier game.ml *)
+(* Pour voir ce qui aurait dû s'afficher, il faudra lancer le fichier Code/Game/game.ml *)
+
+(* ===================================================================== *)
 
 (* A terme ceci sera dans un autre fichier : game.ml *)
 

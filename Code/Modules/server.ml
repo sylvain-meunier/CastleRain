@@ -1,3 +1,5 @@
+(* Module du serveur *)
+
 #use "topfind" ;;
 
 #load "unix.cma" ;;
@@ -6,16 +8,20 @@
 
 module Server =
 struct
+   (* Port du serveur principal. Ce port est également indiqué aux premières lignes du fichier Code/Modules/client.ml *)
    let port = 2400
 
+   (* Renvoie l'adresse du serveur (en fait l'adresse locale d'exécution) *)
    let get_my_addr () = (Unix.gethostbyname(Unix.gethostname())).Unix.h_addr_list.(0)
 
+   (* Etablit le serveur principal *)
    let establish_server server_fun sockaddr =
       let domain = Unix.domain_of_sockaddr sockaddr in
       let sock = Unix.socket domain Unix.SOCK_STREAM 0 
       in Unix.bind sock sockaddr ;
          Unix.listen sock 20;
          Printf.printf "Server Ready\n%!" ;
+         (* Serveur principal, se contente d'accepter les connexion et de gérer les commandes reçus *)
          while true do
             let (s, caller) = Unix.accept sock
             in if Unix.fork() = 0 then
@@ -26,40 +32,50 @@ struct
                   exit 0) ;
          done
       
+   (* Lie les deux fonctions précédentes *)
    let main_server serv_fun sport =
       let mon_adresse = get_my_addr()
       in establish_server serv_fun  (Unix.ADDR_INET(mon_adresse, sport))
    
+   (* Renvoie si un pseudo est valide en fonction du pseudo et d'une liste de pseudo déjà utilisé *)
    let rec pseudo_valide p plist = match plist with
    | [] -> true
    | a::b -> not (String.equal p a) && pseudo_valide p b
 
+   (* Ferme la connexion avec les clients *)
    let rec shutdownclients out = match out with
    | [] -> ()
    | a::q -> (close_out a; shutdownclients q)
 
+   (* Envoie un message à un client *)
    let answer oc text =
       begin
          output_string oc (text^"\n") ;
          flush oc ;
       end
 
+   (* Envoie un message à une liste de clients *)
    let rec answer_all outc text = match outc, text with
    | [], _ | _, "" -> ()
    | a::b, _ -> (Printf.printf "ANSWERING : %s\n%!" text ; answer a text; answer_all b text)
 
+   (* Fonction non utilisée pour l'heure *)
    let get_player_info pseudo_info room ic = pseudo_info ^ "ROOM " ^ room
 
+   (* Fonction non utilisée pour l'heure *)
    let rec envoi_info_joueur info room outc rooms = match outc, rooms with
    | [], _ | _, [] -> ()
    | a::l1, b::l2 -> (if b = room then answer a info; envoi_info_joueur info room l1 l2)
    
+   (* Compte le nombre de joueurs actifs (que le serveur parvient à joindre). Renvoie 4 listes contenant les in_channel, out_channel, pseudos et emplacement de ces joueurs *)
    let rec count_player current_nb inc outc pseud rooms msg mem1 mem2 mem3 mem4 = match (inc, outc, pseud, rooms) with
    | [], _, _, _ | _, [], _, _ | _, _, [], _ | _, _, _, [] -> mem1, mem2, mem3, mem4
    | a::l1, b::l2, c::l3, d::l4 ->
       try (answer b msg; count_player current_nb l1 l2 l3 l4 msg (a::mem1) (b::mem2) (c::mem3) (d::mem4))
       with _ -> (current_nb := !current_nb - 1 ; count_player current_nb l1 l2 l3 l4 msg mem1 mem2 mem3 mem4)
    
+   (* Fonction de gestion d'un message envoyé par un client *)
+   (* Dans l'utilisation actuelle, les if peuvent être ignorés car seul le chat est fonctionnel *)
    let manage_msg_text command ic outc rooms =
       begin
          answer_all outc command ;
@@ -68,17 +84,22 @@ struct
          if String.starts_with ~prefix:"DEND" command then answer_all outc "DEND" ; (* Annonce que le dialogue a été lu *)
       end
    
+   (* Utilise la fonction précédente en lisant dans une in_channel *)
    let manage_msg ic outc rooms =
       let command = input_line ic in
       manage_msg_text command ic outc rooms
    
+   (* Gère une liste de messages envoyés par les clients *)
    let rec manage_clients msgs outc rooms = match msgs with
    | [] -> ()
    | (msg, ic)::l1 -> (manage_msg_text msg ic outc rooms; manage_clients l1 outc rooms)
 
+   (* Réponse du serveur à un ping *)
    exception Pong
-   
+
+   (* Lit et renvoie le pseudo envoyé par le client *)
    let get_pseudo ic = let text = (input_line ic) in if String.starts_with ~prefix:"PSEUDO" text then Scanf.sscanf text "%s %s" (fun x y -> y) else if String.starts_with ~prefix:"PING" text then raise Pong else "Alfred"
+   (* Lit et renvoie l'emplacement envoyé par le client *)
    let get_room ic = let text = (input_line ic) in if String.starts_with ~prefix:"ROOM" text then Scanf.sscanf text "%s %s" (fun x y -> y) else ""
 
    (* Attends qu'un nouveau joueur se connecte et envoie le nombre de joueurs connectés à tous les clients *)
@@ -107,7 +128,7 @@ struct
          if !current_nb = 0 then exit 0 ;
       end
 
-   (* Permet à un client de se connecter à un sous-serveur *)
+   (* Permet à un client de se connecter à un sous-serveur lorsque celui-ci est lancé *)
    let let_new_players_in args =
       let sock, current_nb, clients, newplayer, current_chg = args in
       while true do
@@ -117,6 +138,7 @@ struct
          with _ -> () ;
       done
    
+   (* Tue un processus à partir de son identifiant *)
    let killthread id = Unix.kill id Sys.sigkill
 
    exception Noplayer
@@ -139,7 +161,7 @@ struct
          answer_all outcs "RM 0" ;
          convert_to_descr_select current_nb clients tail l2 l3 l4 sortie memin memout mempseud memroom)
 
-   (* Initialise le sous-serveur *)
+   (* Fonction principale du sous-serveur *)
    let init_game sock clients current_nb =
       let inc, outc, pseud, rooms = !clients and newplayer = ref false and current_chg = ref false in
       let thread = Thread.id (Thread.create (let_new_players_in) (sock, current_nb, clients, newplayer, current_chg)) in
@@ -167,6 +189,8 @@ struct
          with
             | Unix.Unix_error (a, b, c) -> Printf.printf "UNIX_ERREUR : %s %s%!" b c
             | Sys_error s -> Printf.printf "SYS_ERREUR : %s\n%!" s ;
+
+         (* Ce code devrait s'exécuter dans tous les cas, mais semble être ignoré, il a donc été copié à l'intérieur du try, à la suite de la boucle while *)
          Printf.printf "SHUTTING DOWN !\n%!" ;
          shutdownclients outc ;
          try 
@@ -175,8 +199,8 @@ struct
          exit 0 ;
       end
 
-   (* Fonction principale du sous-serveur *)
-   let game_server c nb sock =
+   (* Initialise le sous-serveur *)
+   let init_game_server c nb sock =
       let (s, caller) = Unix.accept sock in
       let inchan = Unix.in_channel_of_descr s
       and outchan = Unix.out_channel_of_descr s in
@@ -194,6 +218,7 @@ struct
          init_game sock clients current_nb ;
       end
 
+   (* Trouve un port libre sur l'ordinateur et crée un serveur dessus, dans l'intervalle : [|serverport+1 ; serverport + 400|] *)
    let find_port oc nb =
       let c = ref 1 in
       begin
@@ -209,13 +234,14 @@ struct
                   Printf.printf "Subserver waiting on port : %d\n%!" !c ;
                   Unix.listen sock 20;
                   answer oc ("LAUNCHED " ^ (string_of_int (port + !c))) ;
-                  if Unix.fork () = 0 then game_server !c nb sock ;
+                  if Unix.fork () = 0 then init_game_server !c nb sock ;
                end
             with _ -> c := !c + 1
          done ;
          if !cond then answer oc "FAILURE 0" ;
       end
 
+   (* Fonction de gestion des messages reçus par le serveur principal *)
    let answer_back ic oc =
       begin
          let s = input_line ic in
@@ -227,6 +253,7 @@ struct
             end
       end
 
+   (* Lance le serveur *)
    let launch () = main_server (answer_back) port
 
 end ;;

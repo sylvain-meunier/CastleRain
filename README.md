@@ -137,16 +137,19 @@ Les modules sont :
 
 Avant de lancer un fichier, il est nécessaire de se placer dans le même répértoire que ce fichier (par exemple, pour lancer le launcher, il faut faire un cd jusqu'au dossier ```Code/Game``` puis exécuter la commande ```ocaml launcher.ml```)
 
+Le fichier
+* ```serveur.ml```
+
+contient le code du serveur (à exécuter donc avant tous les autres pour tester le chat).
+
+Remarque : il sera nécessaire de modifier la variable définie dans les premières lignes du fichier ```client.ml``` contenant l'adresse ip du serveur afin qu'elle corresponde à l'adresse locale, en cas de besoin.
+
 Les fichiers du dossier Code/Game :
 * ```launcher.ml```
 * ```game.ml```
 
 sont disponibles à l'exécution et présentent respectivement le launcher du jeu, et la fenêtre principale ainsi que le chat.
 
-Le fichier
-* ```serveur.ml```
-
-contient le code du serveur (à exécuter donc avant tous les autres pour tester le chat)
 
 Un mini-jeu est accessible depuis la fenêtre principale.
 Assurez-vous que celle-ci a le focus (et pas celle du chat) et utilisez les flèches pour vous déplacer !

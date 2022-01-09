@@ -1,12 +1,20 @@
+(* Ce module contient les fonctions utiles pour établir une connexion avec le serveur et lui envoyer des messages *)
+
 #use "topfind";;
 
 #load "unix.cma";;
 
 module Client =
 struct
+  (* Cette variable peut être modifiée en cas de besoin *)
   let serverip = "127.0.1.1"
+  (* Cette variable doit correspondre à celle indiquée dans le fichier Code/Modules/server.ml *)
   let serverport = 2400
 
+  exception SERVER_ERROR
+  exception Notmsg
+
+  (* Envoi un message au serveur *)
   let sendtoserver oc text =
     begin
       output_string oc (text^"\n") ;
@@ -16,6 +24,7 @@ struct
   (* Renvoie la commande et l'information basique contenue dans un message *)
   let decode answer = Scanf.sscanf answer "%s %d" (fun x y -> x, y)
 
+  (* Essaie de se connecter au serveur, renvoie alors le couple in_channel, out_channel de connexion *)
   let open_connection sockaddr =
     let domain = Unix.domain_of_sockaddr sockaddr in
     let sock = Unix.socket domain Unix.SOCK_STREAM 0 
@@ -24,12 +33,11 @@ struct
           (Unix.in_channel_of_descr sock , Unix.out_channel_of_descr sock)
       with exn -> (Unix.close sock ; raise exn)
   
+  (* utilise la fonction précédente pour se connecter au serveur à partir du port de connexion *)
   let connect_to_server port =
       let serveur_adr = Unix.inet_addr_of_string serverip in
       let sockadr = Unix.ADDR_INET(serveur_adr, port) in 
       open_connection sockadr
-
-  exception SERVER_ERROR
 
   (* Ferme la connexion courante avec le serveur, et renvoie un nouveau couple de in/out channel *)
   let ask_launch ic oc nb_player =
@@ -49,9 +57,8 @@ struct
     with 
       | Exit -> exit 0
       | exn -> (close_out oc ; raise exn)
-    
-  exception Notmsg
-    
+
+  (* Décode un message provenant du chat *)
   let get_text_msg msg = if String.equal "CHAT " (String.sub msg 0 5) then String.sub msg 5 (String.length msg - 5) else raise Notmsg
     
   (* Attends que le serveur démarre la partie *)
@@ -72,6 +79,7 @@ struct
       (ic, oc) ;
     end
   
+  (* Permet de rejoindre une partie *)
   let join dport pseudo room =
     let ic, oc = connect_to_server (serverport + dport) in wait_players ic oc pseudo room, (serverport + dport)
  
@@ -90,10 +98,7 @@ struct
 
  end ;;
 
-(* Lancer une partie -> soit nouvelle (crée les fichiers) soit ancienne (charge) *)
-(* Rejoindre une partie -> soit nouvelle (crée), soit ancienne (charge) *)
-(* Tutoriel -> les tutos claires et précis -> crédits *)
-(* Quitter le jeu *)
+(* Table d'envoi des messages *)
 
 (*QUAND JOIN :
 PSEUDO <pseudo>\n
@@ -111,4 +116,13 @@ CHAT <msg>
 
 QUAND DEND :
 DEND
+*)
+
+(* Table de réception
+
+NB <nombre> -> Indique le nombre de joueur actuellement connecté au serveur
+RM 0 -> Indique qu'un joueur vient de se déconnecter
+A termes, ces deux messages contiendront également le pseudo du joueur
+
+Ajouter également tous les messages de la tablea d'envoi
 *)

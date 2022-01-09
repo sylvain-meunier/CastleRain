@@ -1,3 +1,5 @@
+(* Module de chat (placé dans ce dossier car nécessite de nombreux autres modules) *)
+
 #use "topfind";;
 #load "unix.cma" ;;
 #directory "+threads";;
@@ -15,6 +17,7 @@ struct
 	(* Envoie dans le canal d'entrée du chat tous les messages précédemment envoyés, pourrait être optimisé *)
 	let reset_mem () = Unix.system "cat ./memchat.out >chat.tsin"
 
+	(* Voir le directeur : Director/chat.txt *)
 	let file_in_path = "./chat.tsin" and file_out_path = "./chat.tsout" and memchat_path = "./memchat.out"
 
 	let file_in = open_in file_in_path and file_out = open_out file_out_path and memchat = open_out memchat_path
@@ -25,7 +28,9 @@ struct
 	let largeur_fenetre = int_of_string Init.chat_x
 	let hauteur_fenetre = int_of_string Init.chat_y
 
+	(* Taille du texte lors de l'affichage à l'écran (ne semble pas fonctionner, du moins pas sous WSL 2) *)
 	let taille_txt = 20
+
 	(* Permet une marge d'écriture par rapport aux bords de la fenêtre *)
 	let x_min_txt = 15
 	let y_min_txt = 25
@@ -177,7 +182,6 @@ struct
 
 						(* Cherche sous-serveur déjà ouvert *)
 						while not (Client.ping !c) && !c <= 10 do
-							Printf.printf "PING PONG\n%!" ;
 							c := !c + 1 ;
 						done ;
 						Client.join !c "Alfred" "village:2" ;

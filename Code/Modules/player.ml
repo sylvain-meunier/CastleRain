@@ -1,3 +1,5 @@
+(* Ce module permet d'afficher un joueur déplaçable à l'écran et de lancer un mini-jeu *)
+
 #use  "topfind" ;;
 #load "unix.cma";;
 #require "graphics";;
@@ -29,7 +31,7 @@ struct
 		tab;
 	end
 
-	(* Contient ce tableau *)
+	(* Contient le tableau précédent *)
 	let imgs = read_paths paths
 
 	(* Contient une image blanche *)
@@ -50,6 +52,7 @@ struct
 			Unix.sleepf 0.001;
 		end
 
+	(* Affiche un joueur sur l'écran *)
 	let display_player player =
 		begin
 			Graphics.draw_image imgs.(player.dir).(player.anim) player.x player.y;
@@ -158,6 +161,7 @@ struct
 		| [] -> (mem, true)
 		| foe::q -> let dead, touch = foe_func foe player in (if touch then ([], false) else manage_foes q (if dead then mem else (foe::mem)) player)
 
+	(* Fonction principale *)
 	let func () =
 		begin
 			let j = creer 20 20 0 "../../Images/Sprite/Alfred" 0 "Alfred" and com = ref 'a' and foes = ref [] and points = ref 0 and maxpoints = ref 0 in
@@ -190,10 +194,8 @@ struct
 							let dx, dy = Graphics.text_size "Points : 1000" in Graphics.fill_rect 50 450 dx dy ;
 							Graphics.set_color Graphics.black ;
 							Graphics.draw_string ("Points : "^(string_of_int !points)) ;
-						
-							let ev = Graphics.wait_next_event [Graphics.Poll] in let c = ev.key in
-							if c = Fleche.down || c = Fleche.up || c = Fleche.left || c = Fleche.right then Printf.printf "%c\n" c ;
 
+							(* Met à jour l'affichage du meilleur score *)
 							Graphics.moveto 450 450 ;
 							Graphics.set_color Graphics.white ;
 							let dx, dy = Graphics.text_size "Meilleur score : 1000" in Graphics.fill_rect 450 450 dx dy ;
