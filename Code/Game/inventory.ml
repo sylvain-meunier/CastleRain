@@ -1,3 +1,5 @@
+(* Fichier de test *)
+
 module Inventory =
 struct
 	let create () =

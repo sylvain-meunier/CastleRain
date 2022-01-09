@@ -1,3 +1,5 @@
+(* Fichier de test pour la connexion au serveur *)
+
 #use "topfind";;
 #load "unix.cma";;
 

@@ -30,6 +30,10 @@ Remarque : Les fichiers de code contiennent peu (ou pas) de commentaire car cela
 
 
 # Fonctionnement Principal
+Cette partie explicite le fonctionnement du programme **tel qu'il aurait dû être** et non tel qu'il est.
+Cependant, on notera que l'architecture initiale (particulièrement celle du serveur) et le nom des fichiers sont expliqués ici.
+
+Remarque : L'architecture initiale prévoyait un serveur global. Bien que celui-ci ne le soit pas (pour des raisons d'hébergement), il suffirait de mofifier l'adresse ip indiquée dans les fichiers ```client.ml``` et ```server.ml```
 
 ## Programme Principal (Client)
 Le programme principale divise les tâches entre plusieurs processus, communiquant entre eux par des fichiers avec l'extension ts (pour transfert).
@@ -81,7 +85,7 @@ Cette partie est composée de 2 scripts :
     * Enregistrer les modifications de la map (car il s'agit d'un jeu de gestion / construction) et les transmettre au serveur
 
 ## Remarques générales
-* Dans l'idéal, il s'agirait de lire les fichiers ainsi que les informations envoyées / reçues par le serveur en bytes, afin de pouvoir transmettre également des fichiers par exemple, et de minimiser les erreurs liées à la fonction input_line (qui semble mal fonctionner).
+* Dans l'idéal, il s'agirait de lire les fichiers ainsi que les informations envoyées / reçues par le serveur en bytes, afin de pouvoir transmettre également des fichiers par exemple.
 
 * Il a été possible de détecter l'appui sur les flèches de la façon suivante (ces évènements sont manifestement explicitement ignorés par Graphics, pour une raison inconnue) ->
     - on retient dans un fichier l'état actuel du clavier (ce fichier se nomme touchmem.xmm)
@@ -97,9 +101,9 @@ Cette partie est composée de 2 scripts :
 # Arborescence
 
 ## Fichiers
-* README.md -> ce fichier
-* alias.txt -> explicite les extensions utilisées dans cette application ainsi que le contenu des fichiers concernés
-* main.ml -> pas le fichier principal, comme son nom l'indique
+* ```README.md``` -> ce fichier
+* ```alias.txt``` -> explicite les extensions utilisées dans cette application ainsi que le contenu des fichiers concernés
+* ```main.ml``` -> pas le fichier principal, comme son nom l'indique
 * le dossier Images contient un fichier de code : ```convert.py```, qui permet de transformer un fichier .png en un fichier .img
 
 ## Dossiers
@@ -123,26 +127,26 @@ Les différentes parties du programme utilisent des fichiers avec des extensions
 Les modules sont des fichiers situés dans le dossier Code/Modules et contenant des fonctions et variables souvent utilisées.
 Les modules sont :
 - castlerain.ml -> contient des fonctions générales d'initialisation et de fermeture de l'application
-- client.ml -> devait permettre de se connecter au serveur, jusqu'à ce que la fonction input_line ne fasse des siennes.
+- client.ml -> interface de connexion avec le serveur.
 - player.ml -> permet d'afficher et de déplacer le joueur (à terme, permettra également les interactions avec des objets et l'inventaire, ainsi que les PNG)
 - pyliste.ml -> code des tableaux dynamiques semblables à des listes Python
-- server.ml -> module du serveur, contient toutes les fonctions utiles.
+- server.ml -> module du serveur, contient toutes les fonctions utiles, ainsi que le serveur en lui-même.
 - sprite.ml -> permet d'afficher des images selon un ordre de priorité et de les animer.
 
 # Lancement
 
-Avant de lancer un fichier, placer dans le même répértoire que ce fichier (par exemple, pour lancer le launcher, il faut faire un cd jusqu'au dossier ```Code/Game``` puis exécuter la commande ```ocaml launcher.ml```)
+Avant de lancer un fichier, il est nécessaire de se placer dans le même répértoire que ce fichier (par exemple, pour lancer le launcher, il faut faire un cd jusqu'au dossier ```Code/Game``` puis exécuter la commande ```ocaml launcher.ml```)
 
 Les fichiers du dossier Code/Game :
-* launcher.ml
-* game.ml
+* ```launcher.ml```
+* ```game.ml```
 
 sont disponibles à l'exécution et présentent respectivement le launcher du jeu, et la fenêtre principale ainsi que le chat.
 
 Le fichier
-* serveur.ml
+* ```serveur.ml```
 
-contient le code du serveur (mais celui-ci n'a pas pu être testé en raison de nombreux problèmes avec la fonction input_line...)
+contient le code du serveur (à exécuter donc avant tous les autres pour tester le chat)
 
 Un mini-jeu est accessible depuis la fenêtre principale.
 Assurez-vous que celle-ci a le focus (et pas celle du chat) et utilisez les flèches pour vous déplacer !

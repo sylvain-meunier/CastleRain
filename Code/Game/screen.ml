@@ -1,3 +1,5 @@
+(* Fichier de test *)
+
 #use "topfind";;
 #use "../Modules/castlerain.ml";;
 

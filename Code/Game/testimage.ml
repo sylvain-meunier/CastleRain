@@ -1,3 +1,5 @@
+(* Fichier de test *)
+
 #use "topfind";;
 #load "unix.cma";;
 #require "graphics";;
