@@ -30,21 +30,17 @@ launch_game () ;;
 
 (* Affichage du message *)
 Graphics.moveto 200 350 ;
-Graphics.draw_string "Essayez de toucher les cercles (Utilisez les fleches pour vous deplacer)" ;
+Graphics.draw_string "Les ronds bleu clairs valent 1 point, bleu fonces valent 2 points, les verts 5" ;
 Graphics.moveto 200 300 ;
-Graphics.draw_string "(Seul le mode Showcase est malheureusement disponible pour l'instant...)" ;
+Graphics.draw_string "Evitez les carres rouges !" ;
 Graphics.moveto 200 250 ;
-Graphics.draw_string "Vous pouvez egalement utiliser le chat a cote ->" ;
+Graphics.draw_string "Appuyez sur une touche pour commencer !" ;
 Graphics.moveto 200 200 ;
-Graphics.draw_string "Utilisez entree pour envoyer un message et les fleches pour deplacer le curseur" ;
-Graphics.moveto 200 150 ;
 Graphics.draw_string "Assurez-vous que la fenetre a bien le focus !" ;
-Graphics.moveto 200 100 ;
+Graphics.moveto 200 150 ;
 Graphics.draw_string "Vous pouvez passer cette fenetre en plein ecran !" ;;
 Graphics.moveto 200 400 ;
-Graphics.draw_string "Bienvenue sur CastleRain !" ;;
-
-Unix.sleepf 0.2 ;;
+Graphics.draw_string "Essayez de toucher les cercles (Utilisez les fleches pour vous deplacer)" ;;
 
 (* Lancement du mini-jeu *)
 

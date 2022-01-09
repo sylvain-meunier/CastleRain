@@ -109,8 +109,8 @@ struct
 	(* Crée un cercle suffisament éloigné du joueur *)
 	let rec create_rond (player:player) = match 20 + Random.int (Graphics.size_x () - 40), 20 + Random.int (Graphics.size_y () - 40) with
 		| x, y when distance_2 x y player.x player.y >= 2500 ->
-			let point = if Random.int 5 = 1 then 2 else 1 in
-			let color = if point = 1 then Graphics.cyan else Graphics.blue in
+			let point = if Random.int 5 = 1 then 2 else if Random.int 15 = 0 then 5 else 1 in
+			let color = if point = 1 then Graphics.cyan else if point = 2 then Graphics.blue else Graphics.green in
 			begin
 				Graphics.set_color color ;
 				Graphics.fill_circle x y radius ;
@@ -164,12 +164,17 @@ struct
 	(* Fonction principale *)
 	let func () =
 		begin
+			(* Initialisation *)
+			Random.self_init () ;
+			Graphics.auto_synchronize false;
+
+			while not (Graphics.key_pressed ()) do
+				Unix.sleepf 0.01 ;
+			done ;
+
 			let j = creer 20 20 0 "../../Images/Sprite/Alfred" 0 "Alfred" and com = ref 'a' and foes = ref [] and points = ref 0 and maxpoints = ref 0 in
 			let ronds = ref [create_rond j; create_rond j; create_rond j] in
 				try
-					(* Initialisation *)
-					Random.self_init () ;
-          Graphics.auto_synchronize false;
 					let f = open_in "./game.score" in let score = Scanf.sscanf (input_line f) "%d" (fun x -> x) in maxpoints := score ;
 					(* Permet d'afficher le joueur à l'écran *)
           manage Fleche.down j;
