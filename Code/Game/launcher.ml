@@ -99,9 +99,8 @@ for i=0 to 105 do
 
   Sprite.update_all () ;
   Sprite.show_all () ;
-  Graphics.synchronize () ;
-
   Unix.sleepf 0.05 ;
+  Graphics.synchronize () ;
 done ;;
 
 let anim_logo i = int_of_float (5. *. (sin (Float.pi /. 5.25 *. (float_of_int i)))) ;;
@@ -109,6 +108,7 @@ let anim_logo i = int_of_float (5. *. (sin (Float.pi /. 5.25 *. (float_of_int i)
 try
   let logo_x = logo.posx and logo_y = logo.posy in
   while true do
+    Graphics.synchronize () ;
     for i = 1 to 21 do
       reset_button boutons ;
 
@@ -131,7 +131,6 @@ try
       Sprite.update_one logo ;
 
       Sprite.show_all () ;
-      Graphics.synchronize () ;
       Unix.sleepf 0.3 ;
     done ;
   done
@@ -175,8 +174,6 @@ launch_game () ;;
 
 (* Pas très élégant mais nécessaire vu la qualité de Graphics *)
 #use "../Modules/player.ml" ;;
-
-draw_texte "Utilisez les flèches pour vous déplacer !\n(Seul le mode Showcase est malheureusement disponible...)\nVous pouvez également utiliser le chat à côté ->\nUtilisez entrée pour envoyer un message et les flèches pour déplacer le curseur" ;;
 
 Player.func () ;;
 
